@@ -108,7 +108,7 @@ const GOALS: Array<{ id: Goal; icon: string; label: string; detail: string }> = 
 
 const CONTRACEPTION_OPTIONS: Option[] = [
   { id: 'none', label: 'None', detail: 'Cycle estimates can use your natural bleeding history.' },
-  { id: 'combined-pill-patch-ring', label: 'Combined pill, patch, or ring', detail: 'These usually suppress ovulation, so Lunara will not show a fertile-window forecast.' },
+  { id: 'combined-pill-patch-ring', label: 'Combined pill, patch, or ring', detail: 'These usually suppress ovulation, so Selenya will not show a fertile-window forecast.' },
   { id: 'progestin-only-pill', label: 'Progestin-only pill', detail: 'Bleeding can be less predictable; medication tracking stays available.' },
   { id: 'injection', label: 'Injection', detail: 'Cycle and fertile-window forecasts will be paused.' },
   { id: 'implant', label: 'Implant', detail: 'Cycle and fertile-window forecasts will be paused.' },
@@ -270,7 +270,7 @@ function Frame({
           {showProgress && onBack
             ? <button type="button" className="back-btn" onClick={onBack} aria-label="Go back">‹</button>
             : <span className="ob-appbar-spacer" aria-hidden="true" />}
-          <div className="lunara-brand-button ob-appbar-mark" aria-label="Lunara">
+          <div className="lunara-brand-button ob-appbar-mark" aria-label="Selenya">
             <LunaraMark decorative size={24} />
           </div>
           {showProgress && onSkip
@@ -771,14 +771,14 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             <span className="ob-hero-label">Built for private, local-first tracking</span>
           </div>
           <div>
-            <p className="eyebrow">Meet Lunara</p>
+            <p className="eyebrow">Meet Selenya</p>
             <h1>A clearer map of your changing body.</h1>
             <p className="lead">
-              Start with what you know. Lunara will adapt its questions, show when an estimate is
+              Start with what you know. Selenya will adapt its questions, show when an estimate is
               uncertain, and keep core tracking on this device.
             </p>
           </div>
-          <div className="ob-proof-row" aria-label="Lunara principles">
+          <div className="ob-proof-row" aria-label="Selenya principles">
             <span><strong>Local</strong><small>Core history</small></span>
             <span><strong>Explainable</strong><small>Every estimate</small></span>
             <span><strong>Optional</strong><small>Sensitive answers</small></span>
@@ -796,7 +796,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <div className="ob-top-figure"><Moonseed mood="thinking" /></div>
         <QuestionIntro
           eyebrow="Let’s make this feel like yours"
-          title="What should Lunara call you?"
+          title="What should Selenya call you?"
           body="A first name or nickname is enough. It never has to leave your device."
         />
         <div className="field ob-hero-field">
@@ -854,16 +854,16 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="Sensitive data deserves a clear boundary"
           title="Your core health history stays on this device."
-          body="Lunara needs permission to store the answers and logs you choose to enter. You can export or erase them from Settings."
+          body="Selenya needs permission to store the answers and logs you choose to enter. You can export or erase them from Settings."
         />
         <div className="ob-summary-list privacy">
           <article>
             <span className="local">Local</span>
-            <div><strong>Core tracking</strong><p>Cycle dates, symptoms, notes, and your profile are stored in Lunara’s local database.</p></div>
+            <div><strong>Core tracking</strong><p>Cycle dates, symptoms, notes, and your profile are stored in Selenya’s local database.</p></div>
           </article>
           <article>
             <span className="paused">Off</span>
-            <div><strong>Cloud account</strong><p>No Lunara account, advertising profile, or background cloud sync is created.</p></div>
+            <div><strong>Cloud account</strong><p>No Selenya account, advertising profile, or background cloud sync is created.</p></div>
           </article>
           <article>
             <span className="cautious">Ask first</span>
@@ -884,7 +884,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           />
           <span>
             <strong>Store my selected health information locally</strong>
-            <small>I understand Lunara provides educational estimates, not diagnosis or contraception.</small>
+            <small>I understand Selenya provides educational estimates, not diagnosis or contraception.</small>
           </span>
         </label>
         <div className="spacer" />
@@ -946,7 +946,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   if (current === 'cycle-history') {
     const regularityOptions: Array<{ id: CycleRegularity; label: string; detail: string }> = [
       { id: 'regular', label: 'Usually predictable', detail: 'The gap is roughly similar, though it does not need to be exactly the same.' },
-      { id: 'irregular', label: 'Often unpredictable', detail: 'Lunara will show wider ranges and avoid pretending there is one exact day.' },
+      { id: 'irregular', label: 'Often unpredictable', detail: 'Selenya will show wider ranges and avoid pretending there is one exact day.' },
       { id: 'unsure', label: 'I’m not sure yet', detail: 'That is enough to start. Your prospective history matters more than a guess.' },
     ]
     return (
@@ -975,7 +975,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               <span className="eyebrow">Optional shortcut</span>
               <strong id="apple-health-import-title">Bring in period history from Apple Health</strong>
               <p>
-                Lunara requests read-only access to menstrual-flow records, keeps their source
+                Selenya requests read-only access to menstrual-flow records, keeps their source
                 attached, and never replaces a period date you entered yourself.
               </p>
             </div>
@@ -1046,7 +1046,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="Your mode has adapted"
           title="What bleeding pattern have you noticed?"
-          body="Lunara can track bleeding and medication adherence, but it will pause fertile-window estimates while this method makes them unreliable."
+          body="Selenya can track bleeding and medication adherence, but it will pause fertile-window estimates while this method makes them unreliable."
         />
         <div className="ob-prediction-gate">
           <span aria-hidden="true">◌</span>
@@ -1090,7 +1090,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="Dating source matters"
           title="Which date should anchor your timeline?"
-          body="Lunara preserves the source instead of quietly treating every pregnancy as LMP-dated."
+          body="Selenya preserves the source instead of quietly treating every pregnancy as LMP-dated."
         />
         <div className="ob-option-stack compact">
           {datingOptions.map((option) => (
@@ -1147,7 +1147,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="A more useful fertility plan"
           title="When did you start trying?"
-          body="Optional. Lunara uses this only for age-aware education and clinician-conversation prompts—not to label infertility."
+          body="Optional. Selenya uses this only for age-aware education and clinician-conversation prompts—not to label infertility."
         />
         <div className="field ob-hero-field">
           <label htmlFor="trying-since">Month you started</label>
@@ -1191,7 +1191,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="A baseline, not a diagnosis"
           title="What are you noticing today?"
-          body="This seeds your first check-in. Lunara only calls something a pattern after it repeats across prospectively tracked cycles."
+          body="This seeds your first check-in. Selenya only calls something a pattern after it repeats across prospectively tracked cycles."
         />
         <ChipGrid options={SYMPTOM_OPTIONS} values={draft.baselineSymptoms} exclusive="none" onToggle={(id) => toggle('baselineSymptoms', id, 'none')} />
         <div className="ob-why">
@@ -1210,7 +1210,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="Use only what you already know"
           title="Have you been told you have any of these?"
-          body="Choose diagnosed or clinician-discussed conditions only. Lunara will never infer one from this onboarding."
+          body="Choose diagnosed or clinician-discussed conditions only. Selenya will never infer one from this onboarding."
         />
         <div className="ob-option-stack compact">
           {CONDITION_OPTIONS.map((option) => (
@@ -1357,7 +1357,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         </div>
         <div className="ob-why">
           <span aria-hidden="true">↗</span>
-          <p><strong>Permission comes later</strong> Lunara explains the benefit before asking iOS or Android for health access.</p>
+          <p><strong>Permission comes later</strong> Selenya explains the benefit before asking iOS or Android for health access.</p>
         </div>
         <button className="cta" onClick={next}>Continue</button>
       </Frame>
@@ -1370,7 +1370,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="Your choice"
           title="Would you like to add body measurements?"
-          body="Useful for weight trends and clinician reports. Lunara does not pretend these make a calendar estimate precise."
+          body="Useful for weight trends and clinician reports. Selenya does not pretend these make a calendar estimate precise."
         />
         <div className="ob-measure-grid">
           <label>
@@ -1450,7 +1450,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </article>
           <article>
             <span className="local">Local</span>
-            <div><strong>Health profile</strong><p>Stored in Lunara’s on-device database and editable from Settings.</p></div>
+            <div><strong>Health profile</strong><p>Stored in Selenya’s on-device database and editable from Settings.</p></div>
           </article>
         </div>
         <div className="ob-why">
@@ -1468,7 +1468,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="AI is separate from prediction"
           title="Choose how the assistant runs."
-          body="Core tracking and calculations work without AI. You bring your own credential; Lunara never ships a shared key."
+          body="Core tracking and calculations work without AI. You bring your own credential; Selenya never ships a shared key."
         />
         <div className="ai-provider-grid">
           <OptionCard
@@ -1513,7 +1513,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             <p className="microcopy">
               To bill answers to a Claude subscription instead of API credits, run{' '}
               <code>claude setup-token</code> on a computer where you are signed in and paste the
-              token here. Lunara cannot run the CLI itself from a mobile app.
+              token here. Selenya cannot run the CLI itself from a mobile app.
             </p>
           </div>
         ) : (
@@ -1553,7 +1553,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <p className="eyebrow">Your baseline, not a verdict</p>
         <h1>Ready to notice what changes.</h1>
         <p className="lead">
-          Lunara will start uncertain, show why, and learn from complete check-ins and real cycle history.
+          Selenya will start uncertain, show why, and learn from complete check-ins and real cycle history.
         </p>
         <div className="ob-commitment">
           <strong>I’ll use estimates as context—not contraception or diagnosis.</strong>
@@ -1562,7 +1562,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         {saveError && <p className="error-text">{saveError}</p>}
       </div>
       <button className="cta" disabled={saving} onClick={finish}>
-        {saving ? 'Securing your baseline…' : 'Enter Lunara'}
+        {saving ? 'Securing your baseline…' : 'Enter Selenya'}
       </button>
     </Frame>
   )

@@ -19,7 +19,7 @@ interface LunaraMarkProps {
 export function LunaraMark({
   className = '',
   decorative = false,
-  label = 'Lunara',
+  label = 'Selenya',
   size = 32,
 }: LunaraMarkProps) {
   return (

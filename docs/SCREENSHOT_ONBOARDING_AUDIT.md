@@ -430,9 +430,9 @@ Approximate values are implementation guidance, not extracted brand assets.
   personalization consent are not separately visible;
 - the paywall uses a preselected yearly plan and visually de-emphasizes limited access.
 
-## Comparison with current Lunara onboarding
+## Comparison with current Selenya onboarding
 
-Current Lunara flow:
+Current Selenya flow:
 
 1. privacy-first welcome;
 2. single primary goal;
@@ -442,26 +442,26 @@ Current Lunara flow:
 6. optional OpenAI/Ollama configuration;
 7. medical disclaimer and finish.
 
-| Area | Screenshot flow | Current Lunara | Gap or deliberate difference |
+| Area | Screenshot flow | Current Selenya | Gap or deliberate difference |
 |---|---|---|---|
 | Identity | Optional name + personalized greeting | No name | Missing optional personalization |
-| Goals | Multi-interest grid; likely adaptive chapter queue | One mutually exclusive goal | Lunara cannot express secondary interests |
-| Reproductive modes | Captured route is well-being; other routes not shown | Cycle, TTC, pregnancy, perimenopause | Lunara has an explicit peri mode advantage |
-| Cycle baseline | Regularity, LMP, contraception, conditions | LMP + explicit typical cycle length | Lunara is simpler but lacks important context |
+| Goals | Multi-interest grid; likely adaptive chapter queue | One mutually exclusive goal | Selenya cannot express secondary interests |
+| Reproductive modes | Captured route is well-being; other routes not shown | Cycle, TTC, pregnancy, perimenopause | Selenya has an explicit peri mode advantage |
+| Cycle baseline | Regularity, LMP, contraception, conditions | LMP + explicit typical cycle length | Selenya is simpler but lacks important context |
 | Symptoms | Current symptoms and two signal screens | None during onboarding | No tracker personalization or baseline |
 | Cross-domain impact | Sleep, skin, energy, mental health | None | Missing preference capture |
 | Sexual wellness | Intent, knowledge, desired outcome | None | Deliberately avoid if Guided Journey remains excluded |
 | Lifestyle | Activity level, wearable, height, weight | None | Missing import/personalization setup |
 | Sleep | Goals + analysis | None | Missing preferences |
-| Permissions | Just-in-time Motion & Fitness request | Health integration lives in Settings | Lunara has less onboarding friction but weaker discovery |
-| AI | Proprietary “Intelligence” and assistant presented as benefit | Technical provider/model/key setup | Lunara is transparent but too implementation-oriented for a general-user funnel |
-| Feedback | Multiple analysis and personalized-result screens | No intermediate payoff | Lunara feels like a form rather than a responsive conversation |
-| Completion | Press-and-hold pledge + celebration | Read-and-confirm medical disclaimer | Lunara is safer and clearer, but less emotionally memorable |
+| Permissions | Just-in-time Motion & Fitness request | Health integration lives in Settings | Selenya has less onboarding friction but weaker discovery |
+| AI | Proprietary “Intelligence” and assistant presented as benefit | Technical provider/model/key setup | Selenya is transparent but too implementation-oriented for a general-user funnel |
+| Feedback | Multiple analysis and personalized-result screens | No intermediate payoff | Selenya feels like a form rather than a responsive conversation |
+| Completion | Press-and-hold pledge + celebration | Read-and-confirm medical disclaimer | Selenya is safer and clearer, but less emotionally memorable |
 | Monetization | Trial/yearly/family paywall + limited access | No subscription | Deliberate business-model difference |
-| Visual language | Bold sans, mascot, blush maps, stateful cards | Editorial serif, mineral paper, botanical/orbital motifs | Preserve Lunara identity; borrow interaction structure only |
+| Visual language | Bold sans, mascot, blush maps, stateful cards | Editorial serif, mineral paper, botanical/orbital motifs | Preserve Selenya identity; borrow interaction structure only |
 | Progress | Long modular flow with Skip on most sensitive questions | Fixed five-step setup header, excluding welcome and finish | Accurate for today’s linear flow, but not branch-aware |
 
-### Lunara data-model readiness
+### Selenya data-model readiness
 
 Already persisted by onboarding:
 
@@ -500,7 +500,7 @@ High-value, in-scope patterns to adapt:
 4. period regularity and contraception context;
 5. a short, non-diagnostic “what would you like to track?” baseline;
 6. selected-card explanations that immediately show why an answer matters;
-7. chapter transitions using Lunara’s original botanical/orbital language;
+7. chapter transitions using Selenya’s original botanical/orbital language;
 8. just-in-time HealthKit/Health Connect education and permission;
 9. a personalized setup summary before entering Today;
 10. branch-aware progress and universal Skip/Prefer-not options;
@@ -516,5 +516,5 @@ Explicitly excluded or unsafe to reproduce:
 - Flo’s mascot, logo, illustrations, exact copy, paywall trade dress, or proprietary
   “Intelligence” claims.
 
-The correct Lunara translation is a shorter, calmer, privacy-forward adaptive setup—not
+The correct Selenya translation is a shorter, calmer, privacy-forward adaptive setup—not
 a screen-for-screen clone.

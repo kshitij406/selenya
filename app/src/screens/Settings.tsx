@@ -384,7 +384,7 @@ export function Settings() {
     }
     setCapabilityBusy(true)
     try {
-      const result = await authenticateWithBiometrics('Confirm biometric unlock for Lunara')
+      const result = await authenticateWithBiometrics('Confirm biometric unlock for Selenya')
       if (!result.authenticated) {
         setStatus('Biometric confirmation was cancelled.')
         return
@@ -523,7 +523,7 @@ export function Settings() {
   }
 
   async function enableBackup() {
-    const endpoint = prompt('Backup relay URL (your deployed Lunara backup Worker):', s!.endpoint)
+    const endpoint = prompt('Backup relay URL (your deployed Selenya backup Worker):', s!.endpoint)
     if (!endpoint) return
     let code = s!.recoveryCode
     if (!code) {
@@ -655,7 +655,7 @@ export function Settings() {
   }
 
   async function wipe() {
-    if (!confirm('Delete ALL Lunara data on this device? This cannot be undone.')) return
+    if (!confirm('Delete ALL Selenya data on this device? This cannot be undone.')) return
     await clearSecureSecrets()
     await db.delete()
     location.reload()
@@ -842,7 +842,7 @@ export function Settings() {
             </span>
           </div>
           <p className="muted" style={{ padding: '8px 0' }}>
-            Health imports are read-only, permission-scoped, and copied into your local Lunara
+            Health imports are read-only, permission-scoped, and copied into your local Selenya
             timeline. Manual entries are never silently replaced, and nothing is uploaded by this
             step.
           </p>
@@ -1055,7 +1055,7 @@ export function Settings() {
 
       <Section title="AI assistant">
         <button className="setting-row" onClick={() => setAssistantOpen(true)}>
-          <span>Open Lunara AI</span>
+          <span>Open Selenya AI</span>
           <span className="muted">
             {s.provider === 'anthropic'
               ? hasAnthropicKey
@@ -1090,7 +1090,7 @@ export function Settings() {
       </Section>
 
       <p className="muted" style={{ textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
-        Lunara is open source (AGPL-3.0) and not affiliated with Flo Health Inc. Not a medical
+        Selenya is open source (AGPL-3.0) and not affiliated with Flo Health Inc. Not a medical
         device. Removing the app deletes its local history — keep an encrypted backup.
       </p>
     </div>

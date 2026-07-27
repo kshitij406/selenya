@@ -303,7 +303,7 @@ export function AssistantScreen() {
       className="overlay assistant-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Lunara AI assistant"
+      aria-label="Selenya AI assistant"
     >
       <header className="overlay-head assistant-head">
         <button className="back-btn" onClick={() => setAssistantOpen(false)} aria-label="Close">
@@ -313,7 +313,7 @@ export function AssistantScreen() {
           <LunaraMark decorative size={25} />
           <span>
             <span className="assistant-kicker">Private companion</span>
-            <h2>Lunara AI</h2>
+            <h2>Selenya AI</h2>
           </span>
         </div>
         <button
@@ -340,7 +340,7 @@ export function AssistantScreen() {
           <section className="assistant-setup-intro">
             <p className="eyebrow">Connection</p>
             <h3>Choose where answers come from</h3>
-            <p>Your key stays on this device. Lunara never ships a shared key.</p>
+            <p>Your key stays on this device. Selenya never ships a shared key.</p>
             <div className="ai-provider-grid">
               <button
                 className={`choice-card compact ${provider === 'anthropic' ? 'selected' : ''}`}
@@ -396,14 +396,14 @@ export function AssistantScreen() {
                 <details className="assistant-key-fallback">
                   <summary>Use your Claude subscription instead (CLI login)</summary>
                   <p className="microcopy">
-                    Lunara runs in a mobile WebView, so it cannot shell out to the{' '}
+                    Selenya runs in a mobile WebView, so it cannot shell out to the{' '}
                     <code>claude</code> CLI the way a server can. Run this once on a computer
                     where you are signed in:
                   </p>
                   <pre className="cli-snippet"><code>claude setup-token</code></pre>
                   <p className="microcopy">
                     Paste the <code>{CLI_TOKEN_PREFIX}…</code> token it prints into the field
-                    above. Lunara sends it as an OAuth bearer credential, so answers are billed
+                    above. Selenya sends it as an OAuth bearer credential, so answers are billed
                     to your Claude subscription rather than to API credits. The token expires —
                     rerun the command to refresh it.
                   </p>
@@ -605,7 +605,7 @@ export function AssistantScreen() {
               </div>
             ))}
             {busy && (
-              <div className="chat-bubble assistant typing" aria-label="Lunara is thinking">
+              <div className="chat-bubble assistant typing" aria-label="Selenya is thinking">
                 <span className="chat-bubble-mark" aria-hidden="true">
                   <LunaraMark decorative size={14} />
                 </span>
@@ -631,8 +631,8 @@ export function AssistantScreen() {
             <textarea
               ref={composerInput}
               rows={1}
-              placeholder="Message Lunara…"
-              aria-label="Message Lunara"
+              placeholder="Message Selenya…"
+              aria-label="Message Selenya"
               enterKeyHint="send"
               value={input}
               onChange={(event) => setInput(event.target.value)}

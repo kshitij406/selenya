@@ -32,13 +32,13 @@ export class StartupErrorBoundary extends Component<Props, State> {
               <LunaraMark decorative size={34} />
             </span>
             <p className="page-kicker">Startup interrupted</p>
-            <h1>Lunara couldn’t open.</h1>
+            <h1>Selenya couldn’t open.</h1>
             <p className="muted">
               Your local health data has not been deleted. Reload the app and,
               if this keeps happening, share the technical detail below.
             </p>
             <button className="cta" type="button" onClick={() => window.location.reload()}>
-              Reload Lunara
+              Reload Selenya
             </button>
             <details className="startup-failure-details">
               <summary>Technical detail</summary>

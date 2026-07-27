@@ -74,7 +74,7 @@ export function fertilityDayGuide(
       band: 'unknown',
       label: 'More data needed',
       relativeDay: null,
-      rationale: 'Lunara needs enough cycle history to estimate an ovulation window.',
+      rationale: 'Selenya needs enough cycle history to estimate an ovulation window.',
     }
   }
 
@@ -208,7 +208,7 @@ export function summarizeBbt(
       latestConfirmedOvulation: shifts.at(-1) ?? null,
       status: 'building-baseline',
       explanation:
-        'A few more readings are needed before Lunara can look for a sustained rise against your own baseline.',
+        'A few more readings are needed before Selenya can look for a sustained rise against your own baseline.',
     }
   }
   return {

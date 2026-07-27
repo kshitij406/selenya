@@ -28,7 +28,7 @@ export {
  * No health data is loaded here. Callers must build `approvedContext`
  * explicitly from the toggles the user selected for the current request.
  */
-export const ASSISTANT_SYSTEM_PROMPT = `You are Lunara's health companion inside a privacy-first menstrual-health app. Explain cycles, fertility, pregnancy, symptoms, and perimenopause clearly and warmly.
+export const ASSISTANT_SYSTEM_PROMPT = `You are Selenya's health companion inside a privacy-first menstrual-health app. Explain cycles, fertility, pregnancy, symptoms, and perimenopause clearly and warmly.
 
 Safety rules:
 - You provide general education, not a diagnosis, prescription, or substitute for a clinician.
@@ -261,7 +261,7 @@ async function askOpenRouter(
       'content-type': 'application/json',
       authorization: `Bearer ${config.apiKey.trim()}`,
       // Recommended by OpenRouter to attribute requests; not a secret.
-      'X-Title': 'Lunara',
+      'X-Title': 'Selenya',
     },
     body: JSON.stringify({
       model: requestedModel,

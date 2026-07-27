@@ -1,5 +1,5 @@
 {
-  "name": "@lunara/reminders-worker",
+  "name": "@selenya/reminders-worker",
   "private": true,
   "version": "0.1.0",
   "scripts": {

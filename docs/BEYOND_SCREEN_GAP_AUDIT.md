@@ -11,7 +11,7 @@ The 52 supplied screenshots are valuable reference evidence, but they are not a 
 - subscription entitlement, platform, locale, experiments, and time;
 - accumulated longitudinal logs, pregnancy week, cycle phase, or event triggers.
 
-Lunara now has meaningful foundations—adaptive onboarding, local cycle/TTC/pregnancy/perimenopause engines, an extensive tracker taxonomy, reports, native shells, health bridges, notifications, and an optional AI assistant—but it does **not** yet have full behavioral parity. The largest remaining gaps are not cosmetic. They are:
+Selenya now has meaningful foundations—adaptive onboarding, local cycle/TTC/pregnancy/perimenopause engines, an extensive tracker taxonomy, reports, native shells, health bridges, notifications, and an optional AI assistant—but it does **not** yet have full behavioral parity. The largest remaining gaps are not cosmetic. They are:
 
 1. missing onboarding branches and permission/privacy states;
 2. incomplete structured logging and reminder models;
@@ -88,7 +88,7 @@ Official Flo documentation describes a broader topology:
 - goal-specific experiences change the home state, predictions, content, and logs;
 - free and premium entitlements materially change available analysis and content ([free version](https://help.flo.health/hc/en-us/articles/4411293934740-What-s-included-in-the-free-version), [Flo Premium](https://flo.health/flo-premium)).
 
-Lunara should model these as independent domains connected by a shared health profile:
+Selenya should model these as independent domains connected by a shared health profile:
 
 ```mermaid
 flowchart TD
@@ -143,7 +143,7 @@ Expected inputs:
 - known conditions and cycle abnormalities;
 - baseline symptoms and user priorities.
 
-Lunara already captures most of these. Remaining work:
+Selenya already captures most of these. Remaining work:
 
 - request two to six historical cycle starts when available instead of relying on one date;
 - distinguish “regular,” “variable,” “unknown,” postpartum, breastfeeding, amenorrhea, and hormonal-contraception contexts;
@@ -157,7 +157,7 @@ Flo explicitly says the app is not intended as birth control or a conception met
 
 Official Flo material describes fertility-window guidance, ovulation-test and basal-temperature tracking, prenatal-vitamin reminders, pregnancy-test timing, and a doctor-facing health report ([Flo ovulation tracker](https://flo.health/product-tour/ovulation-tracker), [manual ovulation entry](https://help.flo.health/hc/en-us/articles/360015106752-Can-I-enter-my-ovulation-manually)).
 
-Lunara currently has a deterministic TTC engine with qualitative fertility bands, OPK and BBT evidence, pregnancy-test planning, and logging counts. It still needs:
+Selenya currently has a deterministic TTC engine with qualitative fertility bands, OPK and BBT evidence, pregnancy-test planning, and logging counts. It still needs:
 
 - TTC-specific onboarding for cycle history, trying-since date, recent hormonal-contraception discontinuation, known diagnoses, and test preferences;
 - structured OPK values/results, test brand or method only when useful, and manual ovulation confirmation;
@@ -174,7 +174,7 @@ Numeric “chance of pregnancy” should not be fabricated from a generic calend
 
 Flo's pregnancy onboarding can derive gestational age from last menstrual period, estimated due date, or conception date; it asks lifestyle and prior-pregnancy questions. Pregnancy mode includes gestational age, due date, number of babies, weekly development, stories, articles, videos, and courses ([pregnant-user setup](https://help.flo.health/hc/en-us/articles/4407228824340-Getting-started-for-pregnant-users), [pregnancy mode](https://help.flo.health/hc/en-us/articles/360054523711-What-is-Pregnancy-mode-and-how-do-I-activate-it), [pregnancy product tour](https://flo.health/product-tour/pregnancy-app)).
 
-Lunara currently supports LMP-derived gestational age, a due date, weekly detail, checklists, FAQs, and urgent-warning text. Gaps:
+Selenya currently supports LMP-derived gestational age, a due date, weekly detail, checklists, FAQs, and urgent-warning text. Gaps:
 
 - allow LMP, due-date, conception-date, IVF transfer, and clinician-adjusted dating inputs;
 - track which date source is authoritative and preserve change history;
@@ -192,14 +192,14 @@ Flo's public pages contain some marketing inconsistencies about duration. Lunara
 
 Flo publicly describes a perimenopause experience with a “Perimenopause Score,” a next-period window instead of an exact prediction, hot-flash/mood/fatigue/sleep tracking, daily tips, milestones, trends, reports, and expert content ([Flo perimenopause announcement](https://flo.health/newsroom/flo-for-perimenopause-is-launching-to-empower-the-1-billion-women-who-experience-perimenopause-without-the-support-they-deserve)).
 
-Lunara has an original, non-diagnostic tracking-burden score, 28-day windows, symptom domains, trends, and observations. That is an appropriate independent direction. Gaps:
+Selenya has an original, non-diagnostic tracking-burden score, 28-day windows, symptom domains, trends, and observations. That is an appropriate independent direction. Gaps:
 
 - dedicated onboarding for age range, changing cycle pattern, last bleed, vasomotor symptoms, sleep, mood, genitourinary symptoms, contraception, hysterectomy/oophorectomy, and hormone therapy;
 - no-exact-date forecast mode with explicit widening windows;
 - 60-day/90-day/annual trend reports;
 - transition logic when bleeding is absent or medically induced;
 - perimenopause-specific content and clinician discussion prompts;
-- careful terminology: do not label the original Lunara score as Flo's validated score or a menopause stage diagnosis.
+- careful terminology: do not label the original Selenya score as Flo's validated score or a menopause stage diagnosis.
 
 Flo's exact score formula, thresholds, validation data, and calibration are proprietary/unknown and cannot be recreated from public screens.
 
@@ -207,7 +207,7 @@ Flo's exact score formula, thresholds, validation data, and calibration are prop
 
 Flo supports pills, ring, patch, injection, IUD, and implant logging/reminders. Oral contraception can distinguish on-time and previous-day pills and configure pack length/break behavior. Turning on hormonal-contraception reminders hides fertile and ovulation predictions; copper IUD behavior differs ([official contraception guide](https://help.flo.health/hc/en-us/articles/360015106292-How-do-I-log-my-birth-control-method), [prediction behavior](https://help.flo.health/hc/en-us/articles/360015106672-Why-can-t-I-see-ovulation-predictions)).
 
-Lunara has a broad contraception question and already suppresses some forecasts. It still needs a first-class regimen model:
+Selenya has a broad contraception question and already suppresses some forecasts. It still needs a first-class regimen model:
 
 - method, start/stop dates, dose or product label when entered by the user;
 - pill pack configuration, placebo/break schedule, missed/late dose, and “yesterday's pill” correction;
@@ -234,7 +234,7 @@ Generic event tags are insufficient where downstream logic depends on semantics,
 
 ### Weight, activity, sleep, and wearables
 
-Lunara captures height, weight, activity, wearable brand, sleep impact, and goals, but onboarding currently needs:
+Selenya captures height, weight, activity, wearable brand, sleep impact, and goals, but onboarding currently needs:
 
 - locale-aware units with canonical metric storage;
 - “skip/prefer not to answer” without degrading core cycle tracking;
@@ -298,7 +298,7 @@ The current more-than-80-signal catalog is a strong base, but many signals still
 
 Flo describes cycle dates/durations/averages, comparison with a previous cycle, a six-cycle chart, event patterns, and a doctor report that can be shared or printed on supported platforms ([official cycle analysis guide](https://help.flo.health/hc/en-us/articles/4407228784276-Analyzing-your-cycles-and-symptoms)).
 
-Lunara has cycle statistics and an initial printable doctor summary. Gaps:
+Selenya has cycle statistics and an initial printable doctor summary. Gaps:
 
 - six- and twelve-cycle trend views;
 - cycle-length variability and confidence;
@@ -318,7 +318,7 @@ No pattern should be called causal. Small samples should be labeled as observati
 
 Flo's Insights area includes articles, insights, videos, courses, surveys, stories, search, bookmarks, and goal/topic filtering ([official Insights guide](https://help.flo.health/hc/en-us/articles/360061400651-What-is-Insights-and-how-do-I-navigate-there)). Premium marketing also lists articles, videos, and audio ([Flo Premium](https://flo.health/flo-premium)).
 
-Lunara currently has article search but no full editorial/media system. A complete local implementation needs:
+Selenya currently has article search but no full editorial/media system. A complete local implementation needs:
 
 - an original, licensed, versioned content corpus;
 - medical-review metadata: author, reviewer, review date, citations, jurisdiction, and next review date;
@@ -330,13 +330,13 @@ Lunara currently has article search but no full editorial/media system. A comple
 - rules connecting a log/phase to appropriate content;
 - editorial admin workflow, even if content ships statically.
 
-Flo's private copy, videos, audio, courses, illustrations, mascot, and animations are proprietary assets. Lunara needs an original design language and original reviewed content rather than redistributing or tracing them.
+Flo's private copy, videos, audio, courses, illustrations, mascot, and animations are proprietary assets. Selenya needs an original design language and original reviewed content rather than redistributing or tracing them.
 
 ### Messages and event-triggered assistant
 
 Flo describes its Health Assistant as an interactive educational dialogue launched from topics/prompts or events and cycle phases. Some prompts expire after a changed signal or after 24 hours, and the content is medically checked. Flo says it is not a substitute for diagnosis or treatment ([official Health Assistant guide](https://help.flo.health/hc/en-us/articles/360052676191-How-do-I-chat-with-Flo-Health-Assistant-)).
 
-Lunara's assistant foundation includes:
+Selenya's assistant foundation includes:
 
 - explicit sharing categories;
 - BYO OpenAI key stored in the native secure vault;
@@ -360,13 +360,13 @@ Remaining gaps:
 - strict separation between deterministic calculations and generative explanation;
 - no diagnostic conclusion, false certainty, or fabricated citation.
 
-The assistant can be useful locally, but “AI parity” is not achieved by connecting a model. Flo's private dialogue corpus, reasoning rules, evaluations, and medical-governance process are not public.
+The assistant can be useful locally, but “AI parity” is not achieved by connecting a model. Flo's private dialogue corpus, reasoning rules, evaluations, and medical-governance process are not public. Selenya's assistant is transparent about its limitations.
 
 ## Reminders and notifications
 
 Flo exposes cycle, medication, contraception, lifestyle, content, offer, and community-related notification categories, with some platform differences ([official notification settings](https://help.flo.health/hc/en-us/articles/360052675411-How-do-I-turn-off-notifications-from-Flo)).
 
-Lunara currently has a generic daily local reminder. Required schedule model:
+Selenya currently has a generic daily local reminder. Required schedule model:
 
 - period approaching, period late, log-period, fertile-window/ovulation estimate, and pregnancy-week reminders;
 - pill, ring, patch, injection, implant/IUD follow-up, prenatal vitamin, and other medication schedules;
@@ -383,7 +383,7 @@ Local notifications are buildable. Remote push campaigns, cross-device schedulin
 
 Flo supports importing selected Apple Health and Health Connect data after OS permission. Its current documentation notes that permissions can be scoped and that some sources or indirect integrations may behave differently ([Apple Health import](https://help.flo.health/hc/en-us/articles/34890229122068-How-to-import-data-from-the-Health-app-to-Flo-iOS), [Health Connect pairing](https://help.flo.health/hc/en-us/articles/34890469974292-How-to-pair-Flo-with-Health-Connect-Android), [step tracking](https://help.flo.health/hc/en-us/articles/4401755925652-How-do-I-track-step-data-in-Flo)).
 
-Lunara's native bridge currently imports menstrual flow, BBT, OPK, weight, sleep, and steps. Gaps:
+Selenya's native bridge currently imports menstrual flow, BBT, OPK, weight, sleep, and steps. Gaps:
 
 - per-type permission UI and a source-of-truth policy;
 - incremental background sync and deduplication;
@@ -408,7 +408,7 @@ Flo also offers:
 - account restore ([restore guide](https://help.flo.health/hc/en-us/articles/360015054351-How-can-I-sign-in-and-restore-my-data));
 - an Anonymous Mode designed to decouple personal identifiers, with deliberate recovery/support limitations ([Anonymous Mode](https://flo.health/product-tour/anonymous-mode)).
 
-Lunara already provides immediate local export, import, wipe, PIN/biometric gating, secure key storage, and an encrypted-backup foundation. Critical gaps:
+Selenya already provides immediate local export, import, wipe, PIN/biometric gating, secure key storage, and an encrypted-backup foundation. Critical gaps:
 
 - the primary Dexie database is not encrypted at rest;
 - PIN currently gates UI access but is not equivalent to database encryption;
@@ -422,13 +422,13 @@ Lunara already provides immediate local export, import, wipe, PIN/biometric gati
 
 P0 should be an encrypted native SQLite data layer with migration and recovery tests. Local-first without encryption is not enough for this sensitivity level.
 
-An account-free local app is already pseudonymous in a useful sense, but it is not equivalent to Flo Anonymous Mode. True cross-device anonymous identity separation and recovery requires a carefully designed backend, cryptographic identity, and support model.
+An account-free local app is already pseudonymous in a useful sense, but it is not equivalent to Flo Anonymous Mode. Selenya's privacy model is local-first by default. True cross-device anonymous identity separation and recovery requires a carefully designed backend, cryptographic identity, and support model.
 
 ## Subscriptions and entitlements
 
 Flo Premium uses recurring weekly/monthly/yearly plans, platform billing, trials, restoration, and web subscriptions in some cases. Flo says payment credentials are handled by Apple, Google, or Stripe rather than stored by Flo ([trying Premium](https://help.flo.health/hc/en-us/articles/4407228743956-Trying-Flo-Premium), [restore access](https://help.flo.health/hc/en-us/articles/4651865803668-I-paid-for-a-subscription-but-I-can-t-access-Premium-features), [payment information](https://help.flo.health/hc/en-us/articles/360042626371-Where-do-you-store-my-payment-information)).
 
-Lunara currently has no production entitlement model. Required if a paid tier is desired:
+Selenya currently has no production entitlement model. Required if a paid tier is desired:
 
 - product catalog and free/premium feature matrix;
 - StoreKit 2 and Google Play Billing;
@@ -461,11 +461,11 @@ Status meanings:
 | Cycle-history/confidence onboarding | Foundation | Fully local | P0 |
 | TTC onboarding and engine | Foundation | Fully local | P0/P1 |
 | Pregnancy onboarding and engine | Foundation | Fully local | P0/P1 |
-| Perimenopause experience | Foundation | Fully local, exact Flo score proprietary | P1 |
+| Perimenopause experience | Foundation | Fully local, Selenya independent score | P1 |
 | Contraception regimen model | Missing/partial | Fully local | P0 |
 | Rich typed tracker | Foundation | Fully local | P0 |
 | Calendar/Today state matrix | Foundation | Fully local | P0 |
-| Cycle predictions with uncertainty | Working/foundation | Fully local; exact Flo ML proprietary | P0 |
+| Cycle predictions with uncertainty | Working/foundation | Fully local; Selenya uses transparent algorithms | P0 |
 | Symptom-pattern analytics | Partial | Fully local | P1 |
 | Future symptom prediction | Missing | Local model possible; clinical validation needed | P2 |
 | Cycle/TTC/pregnancy/peri reports | Foundation | Fully local | P1 |
@@ -488,7 +488,7 @@ Status meanings:
 | Partner sharing | Excluded | Requires secure backend/transport | — |
 | Symptom checker | Excluded | High clinical/regulatory burden | — |
 | Guided Journey | Excluded | Content/product system | — |
-| Exact Flo algorithms/content/assets | Proprietary | Not obtainable | Never |
+| Exact Flo algorithms/content/assets | Proprietary; Selenya independent | Not obtainable | Never |
 
 ## What is buildable locally
 
@@ -705,4 +705,4 @@ The correct goal is not “draw the 52 screenshots.” It is:
 
 > Build an original local-first reproductive-health product whose state model covers the observed flows, whose calculations are transparent and conservative, whose health data is encrypted and controllable, whose native integrations are real, and whose unobservable/proprietary areas are replaced by independently designed and honestly labeled equivalents.
 
-That is buildable. Literal Flo equivalence—same private models, data, content, experiments, validation, assets, and cloud operations—is not.
+Selenya exemplifies this approach. That is buildable. Literal Flo equivalence—same private models, data, content, experiments, validation, assets, and cloud operations—is not.

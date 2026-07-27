@@ -1,8 +1,8 @@
-# Lunara native architecture
+# Selenya native architecture
 
 ## Decision
 
-Lunara is a native-distributed, local-first application. React and TypeScript
+Selenya is a native-distributed, local-first application. React and TypeScript
 own the shared product UI and deterministic health engines. Capacitor embeds
 that application in first-class iOS and Android projects. Native APIs are
 exposed through narrow, typed bridges rather than scattered platform checks.
@@ -67,7 +67,7 @@ No native bridge returns more health data than the requesting screen needs.
 - SQLCipher-backed SQLite is a viable encrypted native-store path, with export
   compliance reviewed before release.
 - Local notifications replace the PWA reminder compromise and work without a
-  Lunara server after the user grants permission.
+  Selenya server after the user grants permission.
 
 ## Build workflow
 

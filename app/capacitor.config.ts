@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'app.lunara.mobile',
-  appName: 'Lunara',
+  appName: 'Selenya',
   webDir: 'dist',
   backgroundColor: '#fff8fa',
   ios: {

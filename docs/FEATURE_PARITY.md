@@ -4,7 +4,7 @@ Updated: 2026-07-26
 
 ## Target and status language
 
-Lunara's target is an original, premium-quality reproductive-health companion
+Selenya's target is an original, premium-quality reproductive-health companion
 with comparable product depth. It is not a counterfeit interface and does not
 claim literal Flo parity.
 
@@ -82,9 +82,9 @@ by branch rules, while prediction-critical and consent-critical questions stay.
 | Pregnancy dating engine | Verified locally | Preserves input method and clinician/art/user authority; calculated dates are provisional |
 | Deterministic safety rules | Verified locally | Explicit bleeding, pregnancy/pelvic-pain, postmenopausal-bleeding, and self-harm combinations produce sourced care levels |
 | Safety workflow integration | Foundation | Engine is tested; not every logger, report, article, and assistant entry point invokes it |
-| Pregnancy-chance probability | Not implemented by design | Lunara uses qualitative timing; it does not fabricate a numeric probability |
+| Pregnancy-chance probability | Not implemented by design | Selenya uses qualitative timing; it does not fabricate a numeric probability |
 | Future symptom forecast | Missing | No validated prospective symptom model |
-| Diagnosis or contraceptive mode | Excluded | Lunara is not a medical device and predictions must not be used to prevent pregnancy |
+| Diagnosis or contraceptive mode | Excluded | Selenya is not a medical device and predictions must not be used to prevent pregnancy |
 
 ## Today, calendar, and goal modes
 

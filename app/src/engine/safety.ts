@@ -102,7 +102,7 @@ const ACTIONS: Record<SafetyUrgency, string> = {
 }
 
 const CAVEAT =
-  'This is a limited, non-diagnostic safety screen based only on the answers provided. A lower care level or no match does not mean a symptom is safe, and Lunara cannot rule out an emergency.'
+  'This is a limited, non-diagnostic safety screen based only on the answers provided. A lower care level or no match does not mean a symptom is safe, and Selenya cannot rule out an emergency.'
 
 function reason(
   id: SafetyReasonId,
