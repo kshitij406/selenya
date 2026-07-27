@@ -138,6 +138,7 @@ export function Settings() {
   const [status, setStatus] = useState<string | null>(null)
   const [hasOpenAiKey, setHasOpenAiKey] = useState(false)
   const [hasAnthropicKey, setHasAnthropicKey] = useState(false)
+  const [hasOpenRouterKey, setHasOpenRouterKey] = useState(false)
   const [vaultLabel, setVaultLabel] = useState(isNative ? 'Checking…' : 'Session memory')
   const [biometrics, setBiometrics] = useState<BiometricStatus | null>(null)
   const [health, setHealth] = useState<HealthPlatformStatus | null>(null)
@@ -153,15 +154,17 @@ export function Settings() {
     void Promise.all([
       getSecureSecret(SECURE_SECRET_KEYS.openAiApiKey),
       getSecureSecret(SECURE_SECRET_KEYS.anthropicApiKey),
+      getSecureSecret(SECURE_SECRET_KEYS.openRouterApiKey),
       secureVaultStatus(),
       getBiometricStatus(),
       getHealthPlatformStatus(),
       getWidgetStatus(),
     ])
-      .then(([openAiKey, anthropicKey, vault, biometricStatus, healthStatus, widgetStatus]) => {
+      .then(([openAiKey, anthropicKey, openRouterKey, vault, biometricStatus, healthStatus, widgetStatus]) => {
         if (!alive) return
         setHasOpenAiKey(Boolean(openAiKey))
         setHasAnthropicKey(Boolean(anthropicKey))
+        setHasOpenRouterKey(Boolean(openRouterKey))
         setVaultLabel(
           vault.persistence === 'memory'
             ? 'Session memory'
@@ -217,7 +220,7 @@ export function Settings() {
       pregnancyDating,
       hasPin: !!hasPin,
       biometricLock: biometricLock === '1',
-      provider: provider === 'openai' ? 'openai' : 'anthropic',
+      provider: provider === 'openai' ? 'openai' : provider === 'openrouter' ? 'openrouter' : 'anthropic',
       endpoint: endpoint ?? '',
       recoveryCode: code ?? '',
       legacyReminderTime: time,
@@ -499,18 +502,23 @@ export function Settings() {
 
   async function removeAiKey() {
     const provider = s?.provider ?? 'anthropic'
-    await deleteSecureSecret(
+    const vaultKey =
       provider === 'anthropic'
         ? SECURE_SECRET_KEYS.anthropicApiKey
-        : SECURE_SECRET_KEYS.openAiApiKey,
-    )
+        : provider === 'openrouter'
+          ? SECURE_SECRET_KEYS.openRouterApiKey
+          : SECURE_SECRET_KEYS.openAiApiKey
+    await deleteSecureSecret(vaultKey)
     await removeSetting(SK.aiKey)
     if (provider === 'anthropic') setHasAnthropicKey(false)
+    else if (provider === 'openrouter') setHasOpenRouterKey(false)
     else setHasOpenAiKey(false)
     setStatus(
       provider === 'anthropic'
         ? 'Anthropic credential removed from this device. Revoke it in the Anthropic console to invalidate it everywhere.'
-        : 'OpenAI key removed from secure storage.',
+        : provider === 'openrouter'
+          ? 'OpenRouter key removed from secure storage.'
+          : 'OpenAI key removed from secure storage.',
     )
   }
 
@@ -1053,12 +1061,20 @@ export function Settings() {
               ? hasAnthropicKey
                 ? 'Anthropic connected ›'
                 : 'add Anthropic key ›'
-              : hasOpenAiKey
-                ? 'OpenAI key secured ›'
-                : 'add OpenAI key ›'}
+              : s.provider === 'openrouter'
+                ? hasOpenRouterKey
+                  ? 'OpenRouter connected ›'
+                  : 'add OpenRouter key ›'
+                : hasOpenAiKey
+                  ? 'OpenAI key secured ›'
+                  : 'add OpenAI key ›'}
           </span>
         </button>
-        {(s.provider === 'anthropic' ? hasAnthropicKey : hasOpenAiKey) && (
+        {(s.provider === 'anthropic'
+          ? hasAnthropicKey
+          : s.provider === 'openrouter'
+            ? hasOpenRouterKey
+            : hasOpenAiKey) && (
           <button className="setting-row" onClick={removeAiKey}>
             <span>Remove saved credential</span>
             <span className="muted">›</span>

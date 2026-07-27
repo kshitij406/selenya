@@ -7,6 +7,8 @@ import {
   CLI_TOKEN_PREFIX,
   DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_OPENAI_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
+  OPENROUTER_FREE_MODELS,
   type AssistantConfig,
   type AssistantProvider,
   type ChatMessage,
@@ -53,13 +55,26 @@ const STARTERS = [
 ]
 
 function defaultModel(provider: AssistantProvider): string {
-  return provider === 'anthropic' ? DEFAULT_ANTHROPIC_MODEL : DEFAULT_OPENAI_MODEL
+  if (provider === 'anthropic') return DEFAULT_ANTHROPIC_MODEL
+  if (provider === 'openrouter') return DEFAULT_OPENROUTER_MODEL
+  return DEFAULT_OPENAI_MODEL
 }
 
 function vaultKeyFor(provider: AssistantProvider) {
-  return provider === 'anthropic'
-    ? SECURE_SECRET_KEYS.anthropicApiKey
-    : SECURE_SECRET_KEYS.openAiApiKey
+  if (provider === 'anthropic') return SECURE_SECRET_KEYS.anthropicApiKey
+  if (provider === 'openrouter') return SECURE_SECRET_KEYS.openRouterApiKey
+  return SECURE_SECRET_KEYS.openAiApiKey
+}
+
+/**
+ * Build-time-only convenience default for a personal build: read from a
+ * gitignored .env.local (VITE_OPENROUTER_DEFAULT_KEY=...), never committed.
+ * Still requires the user to hit "Save connection" — never auto-persisted
+ * silently. Other users of a public build simply see an empty field.
+ */
+function buildTimeDefaultKey(provider: AssistantProvider): string {
+  if (provider !== 'openrouter') return ''
+  return (import.meta.env.VITE_OPENROUTER_DEFAULT_KEY as string | undefined) ?? ''
 }
 
 export function AssistantScreen() {
@@ -87,18 +102,29 @@ export function AssistantScreen() {
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const [savedProvider, savedModel, savedBaseUrl, savedConsent, status, legacyKey, savedOpenAiKey, savedAnthropicKey] =
-        await Promise.all([
-          getSetting(SK.aiProvider),
-          getSetting(SK.aiModel),
-          getSetting(SK.aiBaseUrl),
-          getSetting(SK.aiConsent),
-          secureVaultStatus(),
-          getSetting(SK.aiKey),
-          getSecureSecret(SECURE_SECRET_KEYS.openAiApiKey),
-          getSecureSecret(SECURE_SECRET_KEYS.anthropicApiKey),
-        ])
-      const nextProvider: AssistantProvider = savedProvider === 'openai' ? 'openai' : 'anthropic'
+      const [
+        savedProvider,
+        savedModel,
+        savedBaseUrl,
+        savedConsent,
+        status,
+        legacyKey,
+        savedOpenAiKey,
+        savedAnthropicKey,
+        savedOpenRouterKey,
+      ] = await Promise.all([
+        getSetting(SK.aiProvider),
+        getSetting(SK.aiModel),
+        getSetting(SK.aiBaseUrl),
+        getSetting(SK.aiConsent),
+        secureVaultStatus(),
+        getSetting(SK.aiKey),
+        getSecureSecret(SECURE_SECRET_KEYS.openAiApiKey),
+        getSecureSecret(SECURE_SECRET_KEYS.anthropicApiKey),
+        getSecureSecret(SECURE_SECRET_KEYS.openRouterApiKey),
+      ])
+      const nextProvider: AssistantProvider =
+        savedProvider === 'openai' ? 'openai' : savedProvider === 'openrouter' ? 'openrouter' : 'anthropic'
 
       // One-time migration from the old Dexie implementation. Plaintext is
       // removed immediately after the secure bridge accepts it.
@@ -107,13 +133,18 @@ export function AssistantScreen() {
         await removeSetting(SK.aiKey)
       }
       const key =
-        nextProvider === 'anthropic' ? savedAnthropicKey : legacyKey || savedOpenAiKey
+        nextProvider === 'anthropic'
+          ? savedAnthropicKey
+          : nextProvider === 'openrouter'
+            ? savedOpenRouterKey
+            : legacyKey || savedOpenAiKey
       if (!alive) return
       setProvider(nextProvider)
       setModel(savedModel || defaultModel(nextProvider))
       setBaseUrl(savedBaseUrl || '')
       setConsent(parseAssistantConsent(savedConsent))
       setApiKey(key)
+      if (!key) setKeyInput(buildTimeDefaultKey(nextProvider))
       setVaultLabel(
         status.persistence === 'memory'
           ? 'memory only for this browser tab'
@@ -147,10 +178,11 @@ export function AssistantScreen() {
     setProvider(next)
     setModel(defaultModel(next))
     setBaseUrl('')
-    setKeyInput('')
     setError(null)
     setNotice(null)
-    setApiKey(await getSecureSecret(vaultKeyFor(next)))
+    const savedKey = await getSecureSecret(vaultKeyFor(next))
+    setApiKey(savedKey)
+    setKeyInput(savedKey ? '' : buildTimeDefaultKey(next))
   }
 
   async function saveConfiguration() {
@@ -168,6 +200,10 @@ export function AssistantScreen() {
           setError('That does not look like an OpenAI API key.')
           return
         }
+        if (provider === 'openrouter' && !suppliedKey.startsWith('sk-or-')) {
+          setError('That does not look like an OpenRouter API key (expected sk-or-…).')
+          return
+        }
         await setSecureSecret(vaultKeyFor(provider), suppliedKey)
         setApiKey(suppliedKey)
         setKeyInput('')
@@ -182,7 +218,9 @@ export function AssistantScreen() {
         setError(
           provider === 'anthropic'
             ? 'Add an Anthropic API key, or paste a token from `claude setup-token`.'
-            : 'Add an OpenAI project key, or choose another provider.',
+            : provider === 'openrouter'
+              ? 'Add an OpenRouter API key, or choose another provider.'
+              : 'Add an OpenAI project key, or choose another provider.',
         )
         return
       }
@@ -200,7 +238,9 @@ export function AssistantScreen() {
     setNotice(
       provider === 'anthropic'
         ? 'Anthropic credential removed from this device. Revoke it in the Anthropic console to invalidate it everywhere.'
-        : 'OpenAI key removed.',
+        : provider === 'openrouter'
+          ? 'OpenRouter key removed.'
+          : 'OpenAI key removed.',
     )
   }
 
@@ -218,7 +258,9 @@ export function AssistantScreen() {
       setError(
         provider === 'anthropic'
           ? 'Add an Anthropic key or CLI token before sending a message.'
-          : 'Add an OpenAI key before sending a message.',
+          : provider === 'openrouter'
+            ? 'Add an OpenRouter key before sending a message.'
+            : 'Add an OpenAI key before sending a message.',
       )
       return
     }
@@ -314,6 +356,13 @@ export function AssistantScreen() {
                 <span className="choice-icon">✦</span>
                 <span><strong>OpenAI</strong><small>Cloud · your key</small></span>
               </button>
+              <button
+                className={`choice-card compact ${provider === 'openrouter' ? 'selected' : ''}`}
+                onClick={() => void chooseProvider('openrouter')}
+              >
+                <span className="choice-icon">⟡</span>
+                <span><strong>OpenRouter</strong><small>Many models · your key</small></span>
+              </button>
             </div>
           </section>
 
@@ -368,6 +417,45 @@ export function AssistantScreen() {
                     onChange={(event) => setModel(event.target.value)}
                   >
                     {ANTHROPIC_MODELS.map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : provider === 'openrouter' ? (
+              <>
+                <div className="field">
+                  <label htmlFor="assistant-key">OpenRouter API key</label>
+                  <input
+                    id="assistant-key"
+                    type="password"
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder={apiKey ? 'Saved securely · enter to replace' : 'sk-or-v1-…'}
+                    value={keyInput}
+                    onChange={(event) => setKeyInput(event.target.value)}
+                  />
+                  <small className="field-hint">
+                    Get a key at <code>openrouter.ai/keys</code>. Only free-tier models are offered
+                    here, so this never bills your OpenRouter account.
+                  </small>
+                </div>
+                <div className="field">
+                  <label htmlFor="assistant-model">Model</label>
+                  <select
+                    id="assistant-model"
+                    value={
+                      OPENROUTER_FREE_MODELS.some((entry) => entry.id === model)
+                        ? model
+                        : DEFAULT_OPENROUTER_MODEL
+                    }
+                    onChange={(event) => setModel(event.target.value)}
+                  >
+                    {OPENROUTER_FREE_MODELS.map((entry) => (
                       <option key={entry.id} value={entry.id}>
                         {entry.label}
                       </option>
@@ -441,7 +529,7 @@ export function AssistantScreen() {
               </span>
               <span className="privacy-pill">
                 <i aria-hidden="true" />
-                {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}
+                {provider === 'anthropic' ? 'Anthropic' : provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'}
               </span>
               <svg className="assistant-context-chevron" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m7 9.5 5 5 5-5" />

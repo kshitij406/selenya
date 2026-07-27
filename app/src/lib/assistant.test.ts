@@ -5,6 +5,7 @@ import {
   askAssistant,
   DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_OPENAI_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
   type ChatMessage,
 } from './assistant'
 
@@ -211,5 +212,50 @@ describe('assistant transport', () => {
         fetchMock,
       ),
     ).rejects.toThrow('Assistant request failed (500). Check the provider and model settings.')
+  })
+
+  it('sends OpenRouter chat completions with the free-tier default model', async () => {
+    let capturedUrl: RequestInfo | URL | undefined
+    let capturedInit: RequestInit | undefined
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      capturedUrl = url
+      capturedInit = init
+      return new Response(
+        JSON.stringify({ choices: [{ message: { content: 'A general answer.' } }] }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      )
+    })
+
+    const result = await askAssistant(
+      { provider: 'openrouter', apiKey: 'sk-or-v1-key', model: DEFAULT_OPENROUTER_MODEL },
+      history,
+      undefined,
+      fetchMock,
+    )
+
+    expect(result).toBe('A general answer.')
+    expect(String(capturedUrl)).toBe('https://openrouter.ai/api/v1/chat/completions')
+    expect((capturedInit?.headers as Record<string, string>).authorization).toBe('Bearer sk-or-v1-key')
+    const body = JSON.parse(String(capturedInit?.body))
+    expect(body.model).toBe(DEFAULT_OPENROUTER_MODEL)
+    expect(body.model.endsWith(':free')).toBe(true)
+  })
+
+  it('refuses a non-free OpenRouter model before making any request', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ choices: [{ message: { content: 'unreachable' } }] }), {
+        status: 200,
+      }),
+    )
+
+    await expect(
+      askAssistant(
+        { provider: 'openrouter', apiKey: 'sk-or-v1-key', model: 'openai/gpt-5' },
+        history,
+        undefined,
+        fetchMock,
+      ),
+    ).rejects.toThrow(/non-free OpenRouter model/)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

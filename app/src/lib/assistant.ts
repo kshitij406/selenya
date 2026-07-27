@@ -3,11 +3,24 @@ import {
   ANTHROPIC_MODELS,
   DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_OPENAI_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
+  OPENROUTER_BASE_URL,
+  OPENROUTER_FREE_MODELS,
+  OPENROUTER_FREE_SUFFIX,
   type AssistantProvider,
 } from './assistantModels'
 import { providerFetch } from './providerFetch'
 
-export { ANTHROPIC_MODELS, DEFAULT_ANTHROPIC_MODEL, DEFAULT_OPENAI_MODEL, type AssistantProvider }
+export {
+  ANTHROPIC_MODELS,
+  DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_OPENAI_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
+  OPENROUTER_BASE_URL,
+  OPENROUTER_FREE_MODELS,
+  OPENROUTER_FREE_SUFFIX,
+  type AssistantProvider,
+}
 
 /**
  * Consent-scoped, bring-your-own-provider assistant transport.
@@ -85,10 +98,14 @@ ${JSON.stringify(approvedContext)}`
 
 function apiError(provider: AssistantProvider, status: number): Error {
   if (status === 401 || status === 403) {
+    if (provider === 'openai') {
+      return new Error('OpenAI rejected that key. Add a fresh project key in AI settings.')
+    }
+    if (provider === 'openrouter') {
+      return new Error('OpenRouter rejected that key. Add a fresh key from openrouter.ai/keys in AI settings.')
+    }
     return new Error(
-      provider === 'openai'
-        ? 'OpenAI rejected that key. Add a fresh project key in AI settings.'
-        : 'Anthropic rejected that credential. A CLI token from `claude setup-token` expires — generate a new one, or paste a console API key.',
+      'Anthropic rejected that credential. A CLI token from `claude setup-token` expires — generate a new one, or paste a console API key.',
     )
   }
   if (status === 402) return new Error('That account has no available credits.')
@@ -222,6 +239,52 @@ async function askOpenAI(
   return text
 }
 
+async function askOpenRouter(
+  config: AssistantConfig,
+  history: ChatMessage[],
+  approvedContext: ApprovedAssistantContext | undefined,
+  fetchImpl: FetchLike,
+): Promise<string> {
+  if (!config.apiKey?.trim()) throw new Error('Add an OpenRouter API key before sending a message.')
+  const requestedModel = config.model || DEFAULT_OPENROUTER_MODEL
+  // Hard policy guard: this app only ever calls OpenRouter's zero-cost tier,
+  // regardless of what the UI offers or how config was constructed.
+  if (!requestedModel.endsWith(OPENROUTER_FREE_SUFFIX)) {
+    throw new Error(
+      `Refusing to call a non-free OpenRouter model ("${requestedModel}"). Choose a model ending in ${OPENROUTER_FREE_SUFFIX}.`,
+    )
+  }
+  const baseUrl = cleanBaseUrl(config.baseUrl || OPENROUTER_BASE_URL)
+  const response = await fetchImpl(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${config.apiKey.trim()}`,
+      // Recommended by OpenRouter to attribute requests; not a secret.
+      'X-Title': 'Lunara',
+    },
+    body: JSON.stringify({
+      model: requestedModel,
+      messages: [
+        { role: 'system', content: contextInstructions(approvedContext) },
+        ...boundedHistory(history).map((message) => ({ role: message.role, content: message.content })),
+      ],
+      max_tokens: 1200,
+    }),
+  })
+
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined)
+    throw apiError('openrouter', response.status)
+  }
+  const payload = (await response.json()) as {
+    choices?: Array<{ message?: { content?: unknown } }>
+  }
+  const text = (payload.choices?.[0]?.message?.content ?? '').toString().trim()
+  if (!text) throw new Error('OpenRouter returned no readable text.')
+  return text
+}
+
 export async function askAssistant(
   config: AssistantConfig,
   history: ChatMessage[],
@@ -231,6 +294,9 @@ export async function askAssistant(
   if (history.length === 0) throw new Error('Write a message first.')
   if (config.provider === 'anthropic') {
     return askAnthropic(config, history, approvedContext, fetchImpl)
+  }
+  if (config.provider === 'openrouter') {
+    return askOpenRouter(config, history, approvedContext, fetchImpl)
   }
   return askOpenAI(config, history, approvedContext, fetchImpl)
 }
