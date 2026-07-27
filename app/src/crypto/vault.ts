@@ -1,11 +1,14 @@
 /**
- * Client-side crypto for exports and zero-knowledge backup.
+ * Client-side crypto for exports, zero-knowledge backup, and the app PIN.
  * AES-256-GCM with a PBKDF2-SHA256-derived key (600k iterations).
  * TODO(v1.1): swap KDF to Argon2id via WASM once we take that dependency —
  * PBKDF2 at this iteration count is the strongest WebCrypto-native option.
  */
 
 const ITERATIONS = 600_000
+// Lower than the export KDF: this runs on every unlock and a 4-digit PIN's
+// keyspace is small regardless, but it must not be a single unsalted round.
+const PIN_ITERATIONS = 200_000
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTVWXYZ23456789' // no ambiguous chars
 
 export interface Envelope {
@@ -28,12 +31,24 @@ function fromB64(s: string): Uint8Array {
   return Uint8Array.from(atob(s), (c) => c.charCodeAt(0))
 }
 
+/** One unbiased alphabet index per call, via rejection sampling on a random byte. */
+function randomAlphabetChar(): string {
+  const limit = 256 - (256 % CODE_ALPHABET.length)
+  let byte: number
+  do {
+    byte = crypto.getRandomValues(new Uint8Array(1))[0]
+  } while (byte >= limit)
+  return CODE_ALPHABET[byte % CODE_ALPHABET.length]
+}
+
 /** Wallet-style recovery code, shown once: 6 groups of 4. ~30 bits/group. */
 export function generateRecoveryCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(24))
-  const chars = [...bytes].map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length])
   const groups: string[] = []
-  for (let i = 0; i < 24; i += 4) groups.push(chars.slice(i, i + 4).join(''))
+  for (let g = 0; g < 6; g++) {
+    let chars = ''
+    for (let i = 0; i < 4; i++) chars += randomAlphabetChar()
+    groups.push(chars)
+  }
   return groups.join('-')
 }
 
@@ -87,11 +102,19 @@ export async function blobIdFromCode(code: string): Promise<string> {
 }
 
 export async function hashPin(pin: string, saltB64: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(`lunara-pin:${saltB64}:${pin}`),
+  const material = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(pin),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
   )
-  return toB64(digest)
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: fromB64(saltB64) as BufferSource, iterations: PIN_ITERATIONS },
+    material,
+    256,
+  )
+  return toB64(bits)
 }
 
 export function newSalt(): string {

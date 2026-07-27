@@ -102,7 +102,9 @@ export function filterDatesByRange(dates: ISODate[], range: DateRange): ISODate[
 export function describeRange(range: DateRange): string {
   const format = (iso: ISODate, withYear: boolean) => {
     const [year, month, day] = iso.split('-').map(Number)
-    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    // Fixed locale, not `undefined`/host locale: this string lands in a
+    // doctor-facing PDF and must render the same regardless of device settings.
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       ...(withYear ? { year: 'numeric' } : {}),

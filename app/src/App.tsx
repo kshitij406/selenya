@@ -1,8 +1,7 @@
 import { App as NativeApp } from '@capacitor/app'
 import type { PluginListenerHandle } from '@capacitor/core'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useState } from 'react'
-import { AssistantScreen } from './components/AssistantScreen'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { CalendarScreen } from './components/CalendarScreen'
 import { DoctorReport } from './components/DoctorReport'
 import { LogSheet } from './components/LogSheet'
@@ -25,6 +24,12 @@ import {
   TtcDetailScreen,
 } from './screens/healthFeatures'
 import { useApp } from './state/appStore'
+
+// Lazy: pulls in the Anthropic/OpenAI SDKs, the largest deps in the bundle,
+// and is only needed once the user opens the assistant.
+const AssistantScreen = lazy(() =>
+  import('./components/AssistantScreen').then((m) => ({ default: m.AssistantScreen })),
+)
 
 export default function App() {
   const {
@@ -128,7 +133,11 @@ export default function App() {
         <LogSheet date={sheetDate} initialFocus={sheetFocus ?? undefined} onClose={closeSheet} />
       )}
       {calendarOpen && <CalendarScreen />}
-      {assistantOpen && <AssistantScreen />}
+      {assistantOpen && (
+        <Suspense fallback={<div className="page page-loading" role="status" aria-label="Loading assistant" />}>
+          <AssistantScreen />
+        </Suspense>
+      )}
       {reportOpen && <DoctorReport />}
       {cycleReportOpen && <CycleReportScreen onBack={() => setCycleReportOpen(false)} />}
       {pregnancyDetailOpen && flags?.pregnancyDating && (
