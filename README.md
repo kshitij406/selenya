@@ -23,9 +23,10 @@ Lunara is an open-source alternative to Flo®. It is not affiliated with, endors
 
 - **No subscription gate.** Tracking, pattern insights, reports, pregnancy
   guidance, and perimenopause tools are part of the open-source app.
-- **Local first by architecture.** Core logs live in the app's local storage.
-  Optional backup stores a client-encrypted blob; optional AI shares only the
-  categories you select for that request.
+- **Local first by architecture.** Core logs live in the app's local storage,
+  encrypted at rest (see [Security](#security) below). Optional backup stores
+  a client-encrypted blob; optional AI shares only the categories you select
+  for that request.
 - **No 54-screen onboarding funnel. No paywall gauntlet. No nagging.**
 
 ---
@@ -151,10 +152,39 @@ supply your own credential:
 - **Anthropic** — an API key, or a token from `claude setup-token` to bill
   answers to a Claude subscription instead of API credits.
 - **OpenAI** — a project API key.
+- **OpenRouter** — a project API key, restricted to OpenRouter's **free-tier
+  models only** (the picker only offers `:free`-suffixed models, and the app
+  refuses to call anything else, so this can never bill your OpenRouter
+  account). If you want a personal build to skip pasting the key every time,
+  copy `app/.env.example` to `app/.env.local` (gitignored — never committed)
+  and set `VITE_OPENROUTER_DEFAULT_KEY`. Don't set that for a build you plan
+  to hand to anyone else; the key would ship inside it.
 
 Credentials are stored in the iOS Keychain / Android Keystore, never in the
 cycle database and never in a backup. Nothing from your tracker is sent unless
 you tick the specific categories for that message.
+
+## Security
+
+- **Encrypted at rest.** Every record — cycle logs, health profile, settings,
+  bookmarks — is AES-256-GCM encrypted before it's written to the device's
+  local database, and decrypted transparently when the app reads it. A raw
+  database dump, device backup, or DevTools inspection sees ciphertext, not
+  your health data.
+- **Where the key lives.** On iOS/Android, the encryption key is generated
+  once and stored in the Keychain/Keystore — the same hardware-backed secure
+  storage used for your AI provider credentials, never in the database itself
+  and never in a plain/encrypted export. Running Lunara as a browser tab
+  (`pnpm dev`) has no equivalent OS-level keystore, so that mode keeps the key
+  in the browser's local storage instead — real protection against a casual
+  IndexedDB inspection, but not the hardware-backed guarantee native builds
+  get; use a native build if that boundary matters to you.
+- **PIN lock has brute-force backoff.** Repeated wrong PIN entries trigger an
+  increasing lockout (30s after 5 failures, doubling up to 5 minutes).
+- **Your data, your copy.** Settings → Export a backup file (plain) or Export
+  encrypted (passphrase-protected) writes a portable JSON file; Import from
+  file restores from either. Nothing about export/import requires an account
+  or network connection.
 
 ## Disclaimer
 

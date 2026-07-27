@@ -57,7 +57,9 @@ export function CalendarScreen() {
     const [periodStarts, ovulations, flowLogs, cycleLength] = await Promise.all([
       getPeriodStarts(),
       getOvulations(),
-      db.dailyLogs.filter((l) => l.flow !== undefined).primaryKeys(),
+      // Plain toArray() + in-memory filter/map: encrypted tables don't
+      // support Dexie's cursor-based .filter() (see db/encryption.ts).
+      db.dailyLogs.toArray().then((logs) => logs.filter((l) => l.flow !== undefined).map((l) => l.date)),
       getSetting(SK.cycleLength),
     ])
     return {

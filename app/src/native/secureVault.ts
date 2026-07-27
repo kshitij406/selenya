@@ -27,6 +27,7 @@ export const SECURE_SECRET_KEYS = {
   openAiApiKey: 'openai-api-key',
   anthropicApiKey: 'anthropic-api-key',
   openRouterApiKey: 'openrouter-api-key',
+  dbEncryptionKey: 'db-encryption-key',
 } as const
 
 const LunaraNative = getLunaraNativeBridge<LunaraNativeVaultPlugin>()

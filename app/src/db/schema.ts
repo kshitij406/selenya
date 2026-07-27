@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie'
+import { encryptionMiddleware } from './encryption'
 import { detectBbtShiftEstimates } from '../engine/cycle'
 import type { PregnancyDatingMethod } from '../engine/pregnancyDating'
 
@@ -367,6 +368,7 @@ export class LunaraDB extends Dexie {
 
   constructor() {
     super('lunara')
+    this.use(encryptionMiddleware)
     this.version(1).stores({
       dailyLogs: 'date',
       cycles: 'startDate',
@@ -397,7 +399,11 @@ export const db = new LunaraDB()
  * flow-logged days.
  */
 export async function getPeriodStarts(): Promise<string[]> {
-  const flowLogs = await db.dailyLogs.filter((l) => l.flow !== undefined).toArray()
+  // Plain toArray() + in-memory filter, not Dexie's .filter() Collection API:
+  // the latter is cursor-driven and encrypted tables don't support cursors
+  // (see db/encryption.ts) — everything here already needs full decryption
+  // per row anyway, so a full-table scan costs nothing extra.
+  const flowLogs = (await db.dailyLogs.toArray()).filter((l) => l.flow !== undefined)
   flowLogs.sort((a, b) => a.date.localeCompare(b.date))
   const starts: string[] = []
   let prevEpoch = Number.NEGATIVE_INFINITY
