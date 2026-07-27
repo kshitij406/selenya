@@ -2,7 +2,9 @@ name = "lunara-reminders"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
-# Subscriptions live in KV: key = subscriber id, value = {email, sendTime, unsubToken}.
+# Subscriptions live in KV: key = subscriber id, value = {email, sendTime,
+# unsubToken, confirmToken, confirmed}. Also doubles as the store for
+# ratelimit:* counters on /v1/subscribe (see MAX_SUBSCRIBES_* below).
 # Create with:  wrangler kv namespace create SUBS
 [[kv_namespaces]]
 binding = "SUBS"
@@ -17,3 +19,7 @@ ALLOWED_ORIGINS = "https://lunara.app,http://localhost:5173"
 APP_NAME = "Lunara"
 FROM_EMAIL = "reminders@lunara.app"
 # Set the Resend key as a secret:  wrangler secret put RESEND_API_KEY
+# Per-IP / per-email limits on POST /v1/subscribe (rate-limit counters share
+# the SUBS namespace above, key-prefixed as ratelimit:*).
+MAX_SUBSCRIBES_PER_IP_PER_HOUR = "5"
+MAX_SUBSCRIBES_PER_EMAIL_PER_DAY = "3"

@@ -16,6 +16,18 @@ export function bodyFor(appName, unsubUrl) {
   }
 }
 
+export function confirmSubjectFor(appName) {
+  return `Confirm your ${appName} reminder`
+}
+
+/** Sent once, before any recurring reminder, so we never email an address that didn't ask for it. */
+export function confirmBodyFor(appName, confirmUrl) {
+  return {
+    text: `Someone requested reminders from ${appName} for this email address. If that was you, confirm here: ${confirmUrl}\n\nIf you didn't request this, you can ignore this email — nothing else will happen unless you confirm.`,
+    html: `<p>Someone requested reminders from ${appName} for this email address.</p><p>If that was you, <a href="${confirmUrl}">confirm your subscription</a>.</p><p style="color:#8a7580;font-size:12px">If you didn't request this, you can ignore this email — nothing else will happen unless you confirm.</p>`,
+  }
+}
+
 /** Words that must never appear in any reminder — the test asserts this. */
 export const FORBIDDEN_TERMS = [
   'period',
