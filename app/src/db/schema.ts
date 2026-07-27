@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import { encryptionMiddleware } from './encryption'
+import { cursorGuardMiddleware, wrapTableEncryption } from './encryption'
 import { detectBbtShiftEstimates } from '../engine/cycle'
 import type { PregnancyDatingMethod } from '../engine/pregnancyDating'
 
@@ -368,7 +368,7 @@ export class LunaraDB extends Dexie {
 
   constructor() {
     super('lunara')
-    this.use(encryptionMiddleware)
+    this.use(cursorGuardMiddleware)
     this.version(1).stores({
       dailyLogs: 'date',
       cycles: 'startDate',
@@ -389,6 +389,11 @@ export class LunaraDB extends Dexie {
           .table<HealthProfile, string>('healthProfiles')
           .put(healthProfileFromLegacySettings(new Map(settings.map((item) => [item.key, item.value]))))
       })
+    wrapTableEncryption(this.dailyLogs, 'date')
+    wrapTableEncryption(this.cycles, 'startDate')
+    wrapTableEncryption(this.settings, 'key')
+    wrapTableEncryption(this.contentBookmarks, 'slug')
+    wrapTableEncryption(this.healthProfiles, 'id')
   }
 }
 
@@ -601,17 +606,21 @@ export async function getHealthProfile(): Promise<HealthProfile> {
  * outside a liveQuery callback.
  */
 export async function ensureHealthProfile(): Promise<HealthProfile> {
-  return db.transaction('rw', db.settings, db.healthProfiles, async () => {
-    const stored = await db.healthProfiles.get('primary')
-    if (stored) return normalizeHealthProfile(stored, stored.updatedAt)
+  // Deliberately not wrapped in db.transaction(...): each call below gets
+  // its own implicit transaction instead, so the encrypt/decrypt work in
+  // wrapTableEncryption never has to happen while a Dexie transaction is
+  // still open (see db/encryption.ts's file header for why that matters).
+  // A rare double-write of the same default profile on a concurrent first
+  // launch is harmless and self-correcting; it replaces a guaranteed crash.
+  const stored = await db.healthProfiles.get('primary')
+  if (stored) return normalizeHealthProfile(stored, stored.updatedAt)
 
-    const settings = await db.settings.toArray()
-    const profile = healthProfileFromLegacySettings(
-      new Map(settings.map((item) => [item.key, item.value])),
-    )
-    await db.healthProfiles.put(profile)
-    return profile
-  })
+  const settings = await db.settings.toArray()
+  const profile = healthProfileFromLegacySettings(
+    new Map(settings.map((item) => [item.key, item.value])),
+  )
+  await db.healthProfiles.put(profile)
+  return profile
 }
 
 export async function putHealthProfile(

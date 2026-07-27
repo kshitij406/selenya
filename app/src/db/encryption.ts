@@ -1,14 +1,29 @@
-import Dexie from 'dexie'
-import type { DBCore, DBCoreTable, Middleware } from 'dexie'
+import type { DBCore, DBCoreTable, Middleware, Table } from 'dexie'
 import { isNative } from '../native/runtime'
 import { getSecureSecret, SECURE_SECRET_KEYS, setSecureSecret } from '../native/secureVault'
 
 /**
  * AES-256-GCM encryption for every record written to IndexedDB, so a raw
  * database dump (WebView cache, a device backup, casual DevTools inspection)
- * yields ciphertext, not plaintext health data. Registered as a Dexie DBCore
- * middleware in schema.ts — it is transparent to every existing Table.get /
- * .put / .bulkPut / .delete / .toArray() call in the app.
+ * yields ciphertext, not plaintext health data.
+ *
+ * Encryption happens at the Table API level (wrapTableEncryption, called
+ * from schema.ts after each table is set up), not inside a Dexie DBCore
+ * middleware. An earlier version did crypto.subtle work inside the
+ * DBCore mutate/get/query hooks wrapped in Dexie.waitFor() — that is
+ * Dexie's officially documented pattern for foreign async work during a
+ * transaction, but it does not reliably keep the transaction alive across
+ * a real crypto.subtle call on Android WebView: the first-ever write threw
+ * "InvalidStateError: Failed to execute 'objectStore' on 'IDBTransaction':
+ * The transaction has finished" on physical-device testing, even though
+ * the identical code passed against fake-indexeddb in tests. The fix is to
+ * never do async crypto while a Dexie transaction is open at all: encrypt
+ * BEFORE calling the real .put()/.bulkPut() (so Dexie only ever opens a
+ * transaction around an already-resolved plain value), and decrypt AFTER
+ * the real .get()/.toArray() has already resolved and closed its
+ * transaction. ensureHealthProfile() was also changed to stop wrapping its
+ * reads/writes in an explicit db.transaction(...) block for the same
+ * reason — see wrapTableEncryption below and schema.ts.
  *
  * Deliberately does NOT support Collection cursor queries (.filter(),
  * .where(), .each()) on encrypted tables — see openCursor below. The app's
@@ -80,6 +95,20 @@ function getDbKey(): Promise<CryptoKey> {
   return keyPromise
 }
 
+/**
+ * Start loading/deriving the encryption key immediately, before any Dexie
+ * transaction needs it. The first real write otherwise has to wait for BOTH
+ * a native-bridge round-trip (secureVault) AND WebCrypto inside a single
+ * Dexie.waitFor() window — on real Android WebView that combined latency is
+ * enough to blow past what Dexie.waitFor can keep the IndexedDB transaction
+ * alive for, throwing InvalidStateError on the very first app launch. Call
+ * this (and ideally await it) before the app's first Dexie operation.
+ */
+export function warmDbKey(): Promise<void> {
+  return getDbKey().then(() => undefined)
+}
+void warmDbKey()
+
 interface Envelope {
   __lunaraEnc: 1
   iv: string
@@ -120,65 +149,62 @@ function unsupportedCursor(tableName: string): never {
   )
 }
 
-export const encryptionMiddleware: Middleware<DBCore> = {
+/**
+ * Cheap, synchronous, defense-in-depth guard only: makes a stray .filter()/
+ * .where()/.each() on an encrypted table fail loudly with a clear message
+ * instead of silently handing back undecrypted ciphertext envelopes. Does
+ * no crypto itself, so it carries none of the transaction-liveness risk
+ * that made a DBCore-level encrypt/decrypt hook unsafe (see file header).
+ */
+export const cursorGuardMiddleware: Middleware<DBCore> = {
   stack: 'dbcore',
-  name: 'lunara-encryption',
+  name: 'lunara-encrypted-cursor-guard',
   create(downlevelDatabase) {
     return {
       ...downlevelDatabase,
       table(tableName: string): DBCoreTable {
         const downlevelTable = downlevelDatabase.table(tableName)
-        const pkField = ENCRYPTED_TABLES[tableName]
-        if (!pkField) return downlevelTable
-
-        // crypto.subtle is genuinely async and not IndexedDB-transaction-aware,
-        // so an unguarded await here lets Dexie's IDB transaction auto-commit
-        // (idle) before the real request is issued — every operation below
-        // fails in production the same way it fails against fake-indexeddb in
-        // tests. Dexie.waitFor() is the documented fix: it keeps the
-        // surrounding transaction alive while a non-IDB promise is pending.
-        return {
-          ...downlevelTable,
-          mutate: async (req) => {
-            if (req.type === 'add' || req.type === 'put') {
-              const values = await Dexie.waitFor(
-                Promise.all(req.values.map((value: Record<string, unknown>) => encryptRecord(pkField, value))),
-              )
-              return downlevelTable.mutate({ ...req, values })
-            }
-            return downlevelTable.mutate(req)
-          },
-          get: async (req) => {
-            const result = await downlevelTable.get(req)
-            return result
-              ? Dexie.waitFor(decryptRecord(pkField, result as Record<string, unknown>))
-              : result
-          },
-          getMany: async (req) => {
-            const results = await downlevelTable.getMany(req)
-            return Dexie.waitFor(
-              Promise.all(
-                results.map((row: unknown) =>
-                  row ? decryptRecord(pkField, row as Record<string, unknown>) : row,
-                ),
-              ),
-            )
-          },
-          query: async (req) => {
-            const res = await downlevelTable.query(req)
-            if (!req.values) return res // keys-only query — nothing to decrypt
-            return {
-              ...res,
-              result: await Dexie.waitFor(
-                Promise.all(
-                  res.result.map((row: unknown) => decryptRecord(pkField, row as Record<string, unknown>)),
-                ),
-              ),
-            }
-          },
-          openCursor: () => unsupportedCursor(tableName),
-        }
+        if (!ENCRYPTED_TABLES[tableName]) return downlevelTable
+        return { ...downlevelTable, openCursor: () => unsupportedCursor(tableName) }
       },
     }
   },
+}
+
+/**
+ * Patches a Table's get/put/delete/bulkPut/toArray so every value is
+ * encrypted before Dexie opens a transaction to write it, and decrypted
+ * only after Dexie's transaction for a read has already resolved and
+ * closed. This is the app's only Dexie method surface (confirmed: no
+ * .where()/.each()/.orderBy()/.bulkGet()/.bulkDelete()/.update() usage
+ * anywhere in the codebase) — cursorGuardMiddleware above turns any future
+ * use of an unwrapped method into a loud error instead of a silent bug.
+ */
+export function wrapTableEncryption<T, K extends string>(table: Table<T, K>, pkField: string): void {
+  const originalGet = table.get.bind(table)
+  const originalPut = table.put.bind(table)
+  const originalBulkPut = table.bulkPut.bind(table)
+  const originalToArray = table.toArray.bind(table)
+
+  table.get = (async (key: K) => {
+    const raw = await originalGet(key)
+    return raw ? (decryptRecord(pkField, raw as Record<string, unknown>) as unknown as T) : raw
+  }) as Table<T, K>['get']
+
+  table.toArray = (async () => {
+    const raw = await originalToArray()
+    return Promise.all(raw.map((row) => decryptRecord(pkField, row as Record<string, unknown>))) as Promise<T[]>
+  }) as Table<T, K>['toArray']
+
+  table.put = (async (item: T, key?: K) => {
+    const encrypted = await encryptRecord(pkField, item as Record<string, unknown>)
+    return originalPut(encrypted as unknown as T, key)
+  }) as Table<T, K>['put']
+
+  table.bulkPut = (async (items: readonly T[]) => {
+    const encrypted = await Promise.all(
+      items.map((item) => encryptRecord(pkField, item as Record<string, unknown>)),
+    )
+    return originalBulkPut(encrypted as unknown as T[])
+  }) as Table<T, K>['bulkPut']
 }

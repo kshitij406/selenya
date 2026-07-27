@@ -8,6 +8,7 @@ import { LogSheet } from './components/LogSheet'
 import { PinLock } from './components/PinLock'
 import { TabBar } from './components/TabBar'
 import { ensureHealthProfile, getHealthProfile, getSetting, SK } from './db/schema'
+import { warmDbKey } from './db/encryption'
 import { resolvePregnancyDating } from './engine/pregnancyDating'
 import { ArticleScreen } from './screens/ArticleScreen'
 import { Graphs } from './screens/Graphs'
@@ -63,12 +64,19 @@ export default function App() {
   useEffect(() => {
     // Persist legacy/fresh-install profile state outside Dexie's read-only
     // liveQuery context. getHealthProfile remains safe to call reactively.
-    void ensureHealthProfile().catch((error: unknown) => {
-      console.error('[Lunara startup] Could not persist the health profile migration.', error)
-    })
+    // Wait for the encryption key before the first Dexie write: otherwise
+    // that write has to load the key (a native-bridge round-trip) AND
+    // encrypt inside one Dexie.waitFor() window, which can outlast what
+    // Dexie can keep the IndexedDB transaction alive for.
+    void warmDbKey()
+      .then(() => ensureHealthProfile())
+      .catch((error: unknown) => {
+        console.error('[Selenya startup] Could not persist the health profile migration.', error)
+      })
   }, [])
 
   const flags = useLiveQuery(async () => {
+    await warmDbKey()
     const [ob, pin, legacyPregnancyLmp, profile] = await Promise.all([
       getSetting(SK.onboarded),
       getSetting(SK.pinHash),
