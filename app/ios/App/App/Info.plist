@@ -18,11 +18,11 @@
 		</dict>
 	</dict>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Use Face ID to unlock your private Lunara data.</string>
+	<string>Use Face ID to unlock your private Selenya data.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Lunara imports only the health categories you choose so your cycle history can stay current on this device.</string>
+	<string>Selenya imports only the health categories you choose so your cycle history can stay current on this device.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Lunara connects to a local AI service, such as Ollama, only when you configure one.</string>
+	<string>Selenya connects to a local AI service, such as Ollama, only when you configure one.</string>
 	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
@@ -32,7 +32,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Lunara</string>
+        <string>Selenya</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
