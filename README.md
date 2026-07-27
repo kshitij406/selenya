@@ -1,5 +1,9 @@
 # Lunara
 
+> This is a fork of [Blueturboguy07/lunara](https://github.com/Blueturboguy07/lunara),
+> published under the same AGPL-3.0 license. See the commit history for the
+> changes made here.
+
 > **⚠️ Unfinished — this is a work in progress.**
 > Lunara is not on the App Store or Google Play, and there is no installer to
 > double-click. You build it from this repository and run it on your own phone.
