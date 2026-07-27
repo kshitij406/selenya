@@ -19,11 +19,6 @@ export interface FertilityDayGuide {
 }
 
 export interface PregnancyTestPlan {
-  /**
-   * @deprecated Lunara does not calculate an app-authored "early" test date.
-   * Kept as null while UI callers migrate to suggestedDate.
-   */
-  earliestDate: ISODate | null
   expectedPeriodDate: ISODate | null
   suggestedDate: ISODate | null
   status: 'unknown' | 'wait' | 'test-window'
@@ -35,10 +30,6 @@ export interface BbtSummary {
   trackingCoverage: number
   shiftEstimateDates: ISODate[]
   latestShiftEstimate: ISODate | null
-  /** @deprecated Use shiftEstimateDates; BBT does not confirm ovulation. */
-  confirmedShiftDates: ISODate[]
-  /** @deprecated Use latestShiftEstimate; BBT does not confirm ovulation. */
-  latestConfirmedOvulation: ISODate | null
   status: 'not-started' | 'building-baseline' | 'no-sustained-shift' | 'shift-found'
   explanation: string
 }
@@ -124,7 +115,6 @@ export function pregnancyTestPlan(
 ): PregnancyTestPlan {
   if (!ovulationDate && !nextPeriodStart) {
     return {
-      earliestDate: null,
       expectedPeriodDate: null,
       suggestedDate: null,
       status: 'unknown',
@@ -140,7 +130,6 @@ export function pregnancyTestPlan(
     candidate !== null && isForecastAnchorLive(candidate, today, 0) ? candidate : null
   if (suggestedDate === null) {
     return {
-      earliestDate: null,
       expectedPeriodDate: null,
       suggestedDate: null,
       status: 'unknown',
@@ -162,7 +151,6 @@ export function pregnancyTestPlan(
   }
 
   return {
-    earliestDate: null,
     expectedPeriodDate: nextPeriodStart,
     suggestedDate,
     status,
@@ -192,8 +180,6 @@ export function summarizeBbt(
       trackingCoverage: 0,
       shiftEstimateDates: [],
       latestShiftEstimate: null,
-      confirmedShiftDates: [],
-      latestConfirmedOvulation: null,
       status: 'not-started',
       explanation: 'No temperatures are logged in the past 30 days.',
     }
@@ -204,8 +190,6 @@ export function summarizeBbt(
       trackingCoverage: Math.round((readings.length / 30) * 100),
       shiftEstimateDates: shifts,
       latestShiftEstimate: shifts.at(-1) ?? null,
-      confirmedShiftDates: shifts,
-      latestConfirmedOvulation: shifts.at(-1) ?? null,
       status: 'building-baseline',
       explanation:
         'A few more readings are needed before Selenya can look for a sustained rise against your own baseline.',
@@ -216,8 +200,6 @@ export function summarizeBbt(
     trackingCoverage: Math.round((readings.length / 30) * 100),
     shiftEstimateDates: shifts,
     latestShiftEstimate: shifts.at(-1) ?? null,
-    confirmedShiftDates: shifts,
-    latestConfirmedOvulation: shifts.at(-1) ?? null,
     status: shifts.length ? 'shift-found' : 'no-sustained-shift',
     explanation: shifts.length
       ? 'Three higher readings followed your recent baseline; BBT supports ovulation only in retrospect.'

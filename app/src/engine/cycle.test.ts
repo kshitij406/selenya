@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   averageCycleLength,
   averageFollicularGrowthInDays,
-  averageLutealLength,
   fertileWindow,
   getCycleDay,
   predict,
@@ -77,7 +76,6 @@ describe('luteal-mode prediction (Mensinator advanced port)', () => {
   it('averages helpers agree with hand math', () => {
     const periodStarts = ['2026-01-01', '2026-01-29']
     const ovulations = ['2026-01-15']
-    expect(averageLutealLength(periodStarts, ovulations)).toBe(14)
     expect(averageFollicularGrowthInDays(periodStarts, ovulations)).toBe(14)
     expect(averageCycleLength(periodStarts)).toBe(28)
   })

@@ -35,7 +35,6 @@ import { getSecureSecret, SECURE_SECRET_KEYS, setSecureSecret } from '../native/
 const LOCAL_STORAGE_KEY = 'lunara-db-key-fallback'
 const ENCRYPTED_TABLES: Record<string, string> = {
   dailyLogs: 'date',
-  cycles: 'startDate',
   settings: 'key',
   contentBookmarks: 'slug',
   healthProfiles: 'id',

@@ -1,5 +1,5 @@
 import { getLunaraNativeBridge } from './bridge'
-import { isNative, nativePlatform } from './runtime'
+import { isNative } from './runtime'
 
 export const SUPPORTED_HEALTH_DATA_TYPES = [
   'menstrualFlow',
@@ -112,8 +112,3 @@ export async function importHealthData(options: HealthImportOptions): Promise<He
   return result.samples
 }
 
-export function healthPlatformName(): HealthPlatformStatus['platform'] {
-  if (nativePlatform === 'ios') return 'healthkit'
-  if (nativePlatform === 'android') return 'health-connect'
-  return 'none'
-}

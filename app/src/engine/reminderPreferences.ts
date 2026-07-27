@@ -146,10 +146,7 @@ function buildPlan(
   quietHours: QuietHours,
   privatePreviews: boolean,
 ): ReminderPlan {
-  const recurrence =
-    definition.plan.recurrence.type === 'weekdays'
-      ? { ...definition.plan.recurrence, startDate }
-      : { ...definition.plan.recurrence, startDate }
+  const recurrence = { ...definition.plan.recurrence, startDate }
   return {
     id: `settings-${definition.id}`,
     kind: definition.plan.kind,

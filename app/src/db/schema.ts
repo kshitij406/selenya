@@ -343,12 +343,6 @@ export function dailyLogHasEntry(log: DailyLog): boolean {
   )
 }
 
-/** Materialized period ranges derived from consecutive flow days. */
-export interface Cycle {
-  startDate: string
-  endDate?: string
-}
-
 export interface Setting {
   key: string
   value: string
@@ -361,7 +355,6 @@ export interface ContentBookmark {
 
 export class LunaraDB extends Dexie {
   dailyLogs!: Table<DailyLog, string>
-  cycles!: Table<Cycle, string>
   settings!: Table<Setting, string>
   contentBookmarks!: Table<ContentBookmark, string>
   healthProfiles!: Table<HealthProfile, string>
@@ -390,7 +383,6 @@ export class LunaraDB extends Dexie {
           .put(healthProfileFromLegacySettings(new Map(settings.map((item) => [item.key, item.value]))))
       })
     wrapTableEncryption(this.dailyLogs, 'date')
-    wrapTableEncryption(this.cycles, 'startDate')
     wrapTableEncryption(this.settings, 'key')
     wrapTableEncryption(this.contentBookmarks, 'slug')
     wrapTableEncryption(this.healthProfiles, 'id')

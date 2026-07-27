@@ -1,5 +1,5 @@
 import { getLunaraNativeBridge } from './bridge'
-import { isNative, nativePlatform } from './runtime'
+import { isNative } from './runtime'
 
 export interface CycleWidgetSnapshot {
   generatedAt: string
@@ -26,7 +26,6 @@ export interface WidgetStatus {
 interface LunaraNativeWidgetPlugin {
   widgetStatus(): Promise<WidgetStatus>
   publishWidgetSnapshot(options: { snapshot: CycleWidgetSnapshot }): Promise<void>
-  clearWidgetSnapshot(): Promise<void>
 }
 
 const LunaraNative = getLunaraNativeBridge<LunaraNativeWidgetPlugin>()
@@ -73,13 +72,3 @@ export async function publishWidgetSnapshot(snapshot: CycleWidgetSnapshot): Prom
   await LunaraNative.publishWidgetSnapshot({ snapshot: normalizedSnapshot(snapshot) })
 }
 
-export async function clearWidgetSnapshot(): Promise<void> {
-  if (!isNative) return
-  await LunaraNative.clearWidgetSnapshot()
-}
-
-export function currentWidgetPlatform(): WidgetStatus['platform'] {
-  return isNative && (nativePlatform === 'ios' || nativePlatform === 'android')
-    ? nativePlatform
-    : 'web'
-}

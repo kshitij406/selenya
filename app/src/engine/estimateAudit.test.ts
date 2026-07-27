@@ -16,7 +16,6 @@ import {
   addDays,
   averageCycleLength,
   averageFollicularGrowthInDays,
-  averageLutealLength,
   daysBetween,
   detectBbtShiftEstimates,
   fertileWindow,
@@ -35,7 +34,6 @@ import { periMonthlyTimeline, periWindowSummary } from './perimenopause'
 import { applyPredictionContext, periodTimingStatus } from './predictionContext'
 import { pregnancyTimeline, resolvePregnancyDating } from './pregnancyDating'
 import {
-  annotateCycleEras,
   bleedingTrend,
   completedCycles,
   cycleWindowStatistics,
@@ -274,10 +272,6 @@ function auditScenario(scenario: Scenario): void {
   const growth = averageFollicularGrowthInDays(periodStarts, ovulations)
   assertFiniteNumbers('cycle.averageFollicularGrowthInDays', scenario, growth)
   check(growth >= 0, 'cycle.averageFollicularGrowthInDays', scenario, () => `negative: ${growth}`)
-
-  const luteal = averageLutealLength(periodStarts, ovulations)
-  assertFiniteNumbers('cycle.averageLutealLength', scenario, luteal)
-  check(luteal >= 0, 'cycle.averageLutealLength', scenario, () => `negative: ${luteal}`)
 
   const band = uncertaintyDays(periodStarts)
   check(
@@ -619,7 +613,6 @@ function auditScenario(scenario: Scenario): void {
     () => `bbtCelsius outside a physiological range`,
   )
 
-  assertFiniteNumbers('stats.annotateCycleEras', scenario, annotateCycleEras(cycles))
   assertFiniteNumbers('stats.symptomFrequency', scenario, symptomFrequency(logs))
 
   const irregular = irregularity(periodStarts)

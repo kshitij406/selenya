@@ -40,50 +40,9 @@ export async function notificationPermission(
   return next.display === 'granted' ? 'granted' : 'denied'
 }
 
-export async function scheduleDailyReminder(time: string): Promise<void> {
-  if (!isNative) return
-
-  const [hour, minute] = time.split(':').map(Number)
-  if (
-    !Number.isInteger(hour) ||
-    !Number.isInteger(minute) ||
-    hour < 0 ||
-    hour > 23 ||
-    minute < 0 ||
-    minute > 59
-  ) {
-    throw new Error('Reminder time must use HH:MM.')
-  }
-
-  const permission = await notificationPermission(true)
-  if (permission !== 'granted') throw new Error('Notification permission was not granted.')
-
-  await ensureChannel()
-  await cancelDailyReminder()
-  const notification: LocalNotificationSchema = {
-    id: DAILY_REMINDER_ID,
-    title: 'Selenya',
-    body: 'A gentle moment to check in with yourself.',
-    channelId: CHANNEL_ID,
-    schedule: {
-      on: { hour, minute },
-      repeats: true,
-      allowWhileIdle: true,
-    },
-    extra: { route: 'today' },
-  }
-  await LocalNotifications.schedule({ notifications: [notification] })
-}
-
 export async function cancelDailyReminder(): Promise<void> {
   if (!isNative) return
   await LocalNotifications.cancel({ notifications: [{ id: DAILY_REMINDER_ID }] })
-}
-
-export async function pendingDailyReminder(): Promise<boolean> {
-  if (!isNative) return false
-  const pending = await LocalNotifications.getPending()
-  return pending.notifications.some((n) => n.id === DAILY_REMINDER_ID)
 }
 
 /**

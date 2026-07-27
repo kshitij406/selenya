@@ -129,12 +129,6 @@ export function detectBbtShiftEstimates(readings: TemperatureReading[]): ISODate
   return shifts
 }
 
-/**
- * @deprecated Use detectBbtShiftEstimates. Kept while older callers migrate;
- * the returned dates are estimates supported by a BBT shift, not confirmation.
- */
-export const detectBbtOvulations = detectBbtShiftEstimates
-
 export function daysBetween(a: ISODate, b: ISODate): number {
   return toEpochDay(b) - toEpochDay(a)
 }
@@ -198,22 +192,6 @@ export function firstNextPeriodDate(periodStarts: ISODate[], date: ISODate): ISO
 /** Ovulations that are followed by a logged period (getLatestXOvulationsWithPeriod). */
 function ovulationsWithPeriod(periodStarts: ISODate[], ovulations: ISODate[], x: number): ISODate[] {
   return ovulations.filter((o) => firstNextPeriodDate(periodStarts, o) !== null).slice(-x)
-}
-
-export function averageLutealLength(
-  periodStarts: ISODate[],
-  ovulations: ISODate[],
-  ovulationHistory = 5,
-): number {
-  const dates = ovulationsWithPeriod(periodStarts, ovulations, ovulationHistory)
-  if (dates.length === 0) return 0
-  const lengths: number[] = []
-  for (const o of dates) {
-    const next = firstNextPeriodDate(periodStarts, o)
-    if (next === null) return 0
-    lengths.push(daysBetween(o, next))
-  }
-  return average(lengths)
 }
 
 /** Port of CalculationsHelper.calculateNextPeriod, basic branch. */

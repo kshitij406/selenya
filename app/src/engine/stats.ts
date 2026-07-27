@@ -270,42 +270,6 @@ export function fertilitySignalSeries(
     })
 }
 
-export interface TrackingEra {
-  start: ISODate
-  end?: ISODate
-  label: string
-  kind: 'hormonal-contraception' | 'nonhormonal-contraception' | 'pregnancy' | 'postpartum' | 'other'
-}
-
-export interface CycleEraAnnotation {
-  cycleStart: ISODate
-  labels: string[]
-}
-
-/**
- * Hook for future contraception/pregnancy history. No era is invented from a
- * current setting; callers must supply dated intervals explicitly.
- */
-export function annotateCycleEras(
-  cycles: CompletedCycle[],
-  eras: TrackingEra[] = [],
-): CycleEraAnnotation[] {
-  return cycles.map((cycle) => {
-    const cycleEnd = new Date(`${cycle.start}T00:00:00Z`).getTime() + (cycle.length - 1) * 86_400_000
-    const labels = eras
-      .filter((era) => {
-        const eraStart = new Date(`${era.start}T00:00:00Z`).getTime()
-        const eraEnd = era.end
-          ? new Date(`${era.end}T00:00:00Z`).getTime()
-          : Number.POSITIVE_INFINITY
-        const cycleStart = new Date(`${cycle.start}T00:00:00Z`).getTime()
-        return eraStart <= cycleEnd && eraEnd >= cycleStart
-      })
-      .map((era) => era.label)
-    return { cycleStart: cycle.start, labels: [...new Set(labels)] }
-  })
-}
-
 export function symptomFrequency(
   logs: { symptoms?: string[]; moods?: string[]; events?: string[] }[],
 ): { name: string; count: number }[] {

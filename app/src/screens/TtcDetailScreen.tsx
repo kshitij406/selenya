@@ -145,10 +145,10 @@ export function TtcDetailScreen({ onBack }: TtcDetailScreenProps) {
                     BBT · {data.overview.bbt.status.replaceAll('-', ' ')}
                   </strong>
                   <p>{data.overview.bbt.explanation}</p>
-                  {data.overview.bbt.latestConfirmedOvulation && (
+                  {data.overview.bbt.latestShiftEstimate && (
                     <p>
                       Latest conservative shift points to{' '}
-                      {formatShort(data.overview.bbt.latestConfirmedOvulation)}.
+                      {formatShort(data.overview.bbt.latestShiftEstimate)}.
                     </p>
                   )}
                 </div>
@@ -173,12 +173,9 @@ export function TtcDetailScreen({ onBack }: TtcDetailScreenProps) {
                     : 'No test date yet'}
                 </h3>
                 <p>{data.overview.testPlan.message}</p>
-                {data.overview.testPlan.earliestDate && (
+                {data.overview.testPlan.expectedPeriodDate && (
                   <p style={{ marginTop: 9 }}>
-                    Early marker {formatShort(data.overview.testPlan.earliestDate)}
-                    {data.overview.testPlan.expectedPeriodDate
-                      ? ` · expected period ${formatShort(data.overview.testPlan.expectedPeriodDate)}`
-                      : ''}
+                    Expected period {formatShort(data.overview.testPlan.expectedPeriodDate)}
                   </p>
                 )}
               </section>

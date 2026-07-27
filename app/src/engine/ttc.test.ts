@@ -43,7 +43,6 @@ describe('fertilityDayGuide', () => {
 describe('pregnancyTestPlan', () => {
   it('uses the expected-period marker without inventing an O+10 promise', () => {
     expect(pregnancyTestPlan('2026-03-24', '2026-03-15', '2026-03-29')).toMatchObject({
-      earliestDate: null,
       suggestedDate: '2026-03-29',
       status: 'wait',
     })

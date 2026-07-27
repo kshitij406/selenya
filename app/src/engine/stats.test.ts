@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { gestation } from './pregnancy'
 import {
-  annotateCycleEras,
   bleedingTrend,
   completedCycles,
   cycleWindowStatistics,
@@ -135,22 +134,6 @@ describe('stats', () => {
     ])
   })
 
-  it('annotates cycles only from explicitly dated eras', () => {
-    const cycles = completedCycles(['2026-01-01', '2026-01-29', '2026-02-26'])
-    expect(
-      annotateCycleEras(cycles, [
-        {
-          start: '2026-01-20',
-          end: '2026-02-05',
-          label: 'Hormonal method',
-          kind: 'hormonal-contraception',
-        },
-      ]),
-    ).toEqual([
-      { cycleStart: '2026-01-01', labels: ['Hormonal method'] },
-      { cycleStart: '2026-01-29', labels: ['Hormonal method'] },
-    ])
-  })
 })
 
 describe('gestation', () => {
