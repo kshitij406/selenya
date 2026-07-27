@@ -651,4 +651,6 @@ export const SK = {
   backupEndpoint: 'backupEndpoint',
   reminderEmail: 'reminderEmail',
   reminderTime: 'reminderTime',
+  pinFailCount: 'pinFailCount',
+  pinLockUntil: 'pinLockUntil',
 } as const

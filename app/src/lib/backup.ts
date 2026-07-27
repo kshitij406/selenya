@@ -1,5 +1,6 @@
 import { blobIdFromCode, encryptJSON, decryptJSON, type Envelope } from '../crypto/vault'
 import { applyImport, collectExport, type ExportPayload } from '../db/transfer'
+import { providerFetch } from './providerFetch'
 
 /**
  * Zero-knowledge backup to a Lunara relay (Cloudflare Worker + R2). The device
@@ -11,7 +12,7 @@ export async function pushBackup(endpoint: string, recoveryCode: string): Promis
     blobIdFromCode(recoveryCode),
     encryptJSON(await collectExport(), recoveryCode),
   ])
-  const res = await fetch(`${endpoint.replace(/\/$/, '')}/v1/blob/${id}`, {
+  const res = await providerFetch(`${endpoint.replace(/\/$/, '')}/v1/blob/${id}`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(envelope),
@@ -21,7 +22,7 @@ export async function pushBackup(endpoint: string, recoveryCode: string): Promis
 
 export async function restoreBackup(endpoint: string, recoveryCode: string): Promise<number> {
   const id = await blobIdFromCode(recoveryCode)
-  const res = await fetch(`${endpoint.replace(/\/$/, '')}/v1/blob/${id}`)
+  const res = await providerFetch(`${endpoint.replace(/\/$/, '')}/v1/blob/${id}`)
   if (res.status === 404) throw new Error('No backup found for that recovery code.')
   if (!res.ok) throw new Error(`Restore failed (${res.status})`)
   const envelope = (await res.json()) as Envelope

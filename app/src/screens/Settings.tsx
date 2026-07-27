@@ -776,7 +776,7 @@ export function Settings() {
         )}
       </Section>
 
-      <Section title="Privacy &amp; lock">
+      <Section title="Privacy & lock">
         <button className="setting-row" onClick={s.hasPin ? removePin : setPin}>
           <span>PIN lock</span>
           <span className="muted">{s.hasPin ? 'On — tap to remove' : 'Off'}</span>
@@ -800,7 +800,7 @@ export function Settings() {
       </Section>
 
       {isNative && (
-        <Section title="Device health &amp; native services">
+        <Section title="Device health & native services">
           {nativePlatform === 'ios' && (
             <button className="setting-row" disabled={capabilityBusy} onClick={importApplePeriods}>
               <span>Import period history from Apple Health</span>
@@ -841,7 +841,7 @@ export function Settings() {
         </Section>
       )}
 
-      <Section title="Your data &amp; encrypted backup">
+      <Section title="Your data & encrypted backup">
         <button className="setting-row" onClick={exportPlain}>
           <span>Export a backup file</span>
           <span className="muted">›</span>
@@ -1084,7 +1084,9 @@ export function Settings() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="section-label" style={{ marginBottom: 4 }} dangerouslySetInnerHTML={{ __html: title }} />
+      <div className="section-label" style={{ marginBottom: 4 }}>
+        {title}
+      </div>
       <div className="card" style={{ padding: '0 16px' }}>
         {children}
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { hashPin } from '../crypto/vault'
-import { getSetting, SK } from '../db/schema'
+import { getSetting, removeSetting, setSetting, SK } from '../db/schema'
 import {
   authenticateWithBiometrics,
   getBiometricStatus,
@@ -15,11 +15,22 @@ export function PinLock() {
   const [biometricKind, setBiometricKind] = useState<BiometricKind>('none')
   const [authBusy, setAuthBusy] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [failCount, setFailCount] = useState(0)
+  const [lockUntil, setLockUntil] = useState(0)
+  const [, forceTick] = useState(0)
 
   useEffect(() => {
     let alive = true
     ;(async () => {
       const enabled = (await getSetting(SK.biometricLock)) === '1'
+      const [storedFailCount, storedLockUntil] = await Promise.all([
+        getSetting(SK.pinFailCount),
+        getSetting(SK.pinLockUntil),
+      ])
+      if (alive) {
+        setFailCount(Number(storedFailCount) || 0)
+        setLockUntil(Number(storedLockUntil) || 0)
+      }
       if (!enabled) return
       const status = await getBiometricStatus()
       if (!alive || !status.available || !status.enrolled) return
@@ -30,6 +41,14 @@ export function PinLock() {
       alive = false
     }
   }, [])
+
+  useEffect(() => {
+    if (lockUntil <= Date.now()) return
+    const id = setInterval(() => forceTick((t) => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [lockUntil])
+
+  const remainingLockSeconds = Math.max(0, Math.ceil((lockUntil - Date.now()) / 1000))
 
   async function unlockWithBiometrics() {
     setAuthBusy(true)
@@ -49,13 +68,30 @@ export function PinLock() {
   }
 
   async function press(d: string) {
+    if (Date.now() < lockUntil) {
+      setShake(true)
+      setTimeout(() => setShake(false), 350)
+      return
+    }
     const next = entered + d
     setEntered(next)
     if (next.length === 4) {
       const [salt, hash] = await Promise.all([getSetting(SK.pinSalt), getSetting(SK.pinHash)])
       if (salt && hash && (await hashPin(next, salt)) === hash) {
+        setFailCount(0)
+        setLockUntil(0)
+        await Promise.all([removeSetting(SK.pinFailCount), removeSetting(SK.pinLockUntil)])
         setLocked(false)
       } else {
+        const nextFailCount = failCount + 1
+        setFailCount(nextFailCount)
+        await setSetting(SK.pinFailCount, String(nextFailCount))
+        if (nextFailCount >= 5) {
+          const lockSeconds = Math.min(30 * 2 ** (nextFailCount - 5), 300)
+          const until = Date.now() + lockSeconds * 1000
+          setLockUntil(until)
+          await setSetting(SK.pinLockUntil, String(until))
+        }
         setShake(true)
         setTimeout(() => {
           setEntered('')
@@ -84,6 +120,11 @@ export function PinLock() {
         </button>
       )}
       {authError && <p className="error-text" style={{ textAlign: 'center' }}>{authError}</p>}
+      {remainingLockSeconds > 0 && (
+        <p className="error-text" style={{ textAlign: 'center' }}>
+          Too many attempts. Try again in {remainingLockSeconds}s.
+        </p>
+      )}
       <div className="pin-pad">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((k, i) =>
           k === '' ? (
