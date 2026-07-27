@@ -13,7 +13,14 @@ export const nativePlatform = Capacitor.getPlatform()
  * operating-system concerns. Every call is guarded so the browser build
  * remains a useful development surface.
  */
-export async function initializeNativeRuntime(): Promise<void> {
+/**
+ * Called on the hardware back button when the user is at the app root (no
+ * screen history left, so the next back press would exit). Return true to
+ * swallow that back press instead of minimizing the app.
+ */
+export type ExitAttemptHandler = () => boolean | Promise<boolean>
+
+export async function initializeNativeRuntime(onExitAttempt?: ExitAttemptHandler): Promise<void> {
   document.documentElement.dataset.runtime = isNative ? nativePlatform : 'web'
   if (!isNative) return
 
@@ -24,8 +31,14 @@ export async function initializeNativeRuntime(): Promise<void> {
   ])
 
   await NativeApp.addListener('backButton', ({ canGoBack }) => {
-    if (canGoBack) history.back()
-    else void NativeApp.minimizeApp()
+    if (canGoBack) {
+      history.back()
+      return
+    }
+    void (async () => {
+      const handled = onExitAttempt ? await onExitAttempt() : false
+      if (!handled) void NativeApp.minimizeApp()
+    })()
   })
 
   await SplashScreen.hide({ fadeOutDuration: 260 })

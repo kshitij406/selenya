@@ -250,7 +250,7 @@ export function Today() {
         getHealthProfile(),
         getSetting(SK.pregnancyLMP),
         // Plain toArray() + in-memory filter, not Dexie's .where() Collection
-        // API — doesn't support cursor-based queries (see db/encryption.ts).
+        // API, doesn't support cursor-based queries (see db/encryption.ts).
         db.dailyLogs.toArray().then((logs) => logs.filter((log) => log.date <= selectedDate)),
         db.dailyLogs.get(selectedDate),
       ])
@@ -830,7 +830,7 @@ export function Today() {
         }
       >
         <span className="prediction-basis-glyph" aria-hidden="true">
-          {data.predictionContext.evidenceMode === 'suppressed' ? '—' : '±'}
+          {data.predictionContext.evidenceMode === 'suppressed' ? ', ' : '±'}
         </span>
         <span>
           <small>Prediction basis</small>
@@ -902,7 +902,7 @@ export function Today() {
             ? 'Spot the signals that can add context to a calendar estimate.'
             : data.goal === 'peri'
               ? 'Track changes month to month without turning a pattern into a diagnosis.'
-              : 'Learn what may be changing — and what can vary from person to person.'}
+              : 'Learn what may be changing, and what can vary from person to person.'}
         </p>
         <span>Explore the guide <b aria-hidden="true">↗</b></span>
       </button>

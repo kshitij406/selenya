@@ -214,7 +214,7 @@
   font-weight: 750;
   background: rgba(255, 255, 255, 0.09);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
 }
 
 .peri-current-result {
@@ -417,7 +417,7 @@
 .health-meter {
   height: 7px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   background: var(--health-coral-soft);
 }
 
@@ -474,7 +474,7 @@
 .health-badge {
   flex: 0 0 auto;
   padding: 5px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   background: var(--health-moss-soft);
   color: var(--health-moss);
   font-size: 9px;
@@ -587,7 +587,7 @@
   position: relative;
   height: 5px;
   margin: 11px 2px 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   background: var(--health-coral-soft);
 }
 
@@ -684,7 +684,7 @@
   margin: 0 8px 8px 0;
   padding: 7px 10px;
   border: 1px solid var(--health-line);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   color: var(--health-moss);
   background: #fff;
   font-size: 10px;

@@ -227,7 +227,7 @@
   text-transform: uppercase;
   background: var(--rose-100);
   border: 1px solid rgba(214, 75, 104, 0.11);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
 }
 
 .assistant-overlay .privacy-pill i {
@@ -367,7 +367,7 @@
   display: block;
   background: rgba(82, 57, 65, 0.11);
   border: 1px solid rgba(82, 57, 65, 0.08);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   transition:
     background 180ms var(--ease-soft),
     border-color 180ms var(--ease-soft);

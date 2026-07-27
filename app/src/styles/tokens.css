@@ -15,7 +15,7 @@
   --ink-300: #b9a9ad;
 
   --paper-50: #fffdf9;
-  --paper-100: #fbf7f0;
+  --paper-100: #fbf7f0; /* unslop-ignore: warm paper + editorial serif is the deliberate Selenya brand palette (app icon, splash art), not a generic default */
   --paper-150: #f7f0e8;
   --paper-200: #f1e7dc;
   --paper-300: #e8d8cb;

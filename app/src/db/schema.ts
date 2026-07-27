@@ -660,4 +660,5 @@ export const SK = {
   reminderTime: 'reminderTime',
   pinFailCount: 'pinFailCount',
   pinLockUntil: 'pinLockUntil',
+  supportPromptShown: 'supportPromptShown',
 } as const

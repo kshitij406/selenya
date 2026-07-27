@@ -783,7 +783,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             <span><strong>Explainable</strong><small>Every estimate</small></span>
             <span><strong>Optional</strong><small>Sensitive answers</small></span>
           </div>
-          <p className="ob-legal">Educational estimates only—not diagnosis or birth control.</p>
+          <p className="ob-legal">Educational estimates only, not diagnosis or birth control.</p>
         </div>
         <button className="cta" onClick={next}>Build my baseline <span aria-hidden="true">→</span></button>
       </Frame>
@@ -954,7 +954,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="Your real history beats a generic 28-day cycle"
           title="What do you know about your recent periods?"
-          body="Add up to three true period starts—not spotting. Fewer dates are completely fine."
+          body="Add up to three true period starts, not spotting. Fewer dates are completely fine."
         />
         <div className="ob-option-stack compact">
           {regularityOptions.map((option) => (
@@ -1052,7 +1052,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           <span aria-hidden="true">◌</span>
           <div>
             <strong>Fertility forecast paused</strong>
-            <p>Not a failure—this is the medically honest state for this context.</p>
+            <p>Not a failure, this is the medically honest state for this context.</p>
           </div>
         </div>
         <div className="ob-option-stack">
@@ -1147,7 +1147,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <QuestionIntro
           eyebrow="A more useful fertility plan"
           title="When did you start trying?"
-          body="Optional. Selenya uses this only for age-aware education and clinician-conversation prompts—not to label infertility."
+          body="Optional. Selenya uses this only for age-aware education and clinician-conversation prompts, not to label infertility."
         />
         <div className="field ob-hero-field">
           <label htmlFor="trying-since">Month you started</label>
@@ -1196,7 +1196,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <ChipGrid options={SYMPTOM_OPTIONS} values={draft.baselineSymptoms} exclusive="none" onToggle={(id) => toggle('baselineSymptoms', id, 'none')} />
         <div className="ob-why">
           <span aria-hidden="true">i</span>
-          <p>An unlogged day is treated as missing—not as a symptom-free day.</p>
+          <p>An unlogged day is treated as missing, not as a symptom-free day.</p>
         </div>
         <div className="spacer" />
         <button className="cta" onClick={next}>Continue</button>
@@ -1219,7 +1219,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               option={option}
               selected={draft.conditions.includes(option.id)}
               onClick={() => toggle('conditions', option.id)}
-              selectionDetail="Used to widen uncertainty and tailor caution—not as a diagnosis."
+              selectionDetail="Used to widen uncertainty and tailor caution, not as a diagnosis."
             />
           ))}
         </div>
@@ -1556,7 +1556,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           Selenya will start uncertain, show why, and learn from complete check-ins and real cycle history.
         </p>
         <div className="ob-commitment">
-          <strong>I’ll use estimates as context—not contraception or diagnosis.</strong>
+          <strong>I’ll use estimates as context, not contraception or diagnosis.</strong>
           <span>Predictions can be wrong, especially with irregular cycles, hormonal contraception, postpartum changes, or limited data.</span>
         </div>
         {saveError && <p className="error-text">{saveError}</p>}

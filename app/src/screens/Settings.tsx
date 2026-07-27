@@ -529,12 +529,12 @@ export function Settings() {
     if (!code) {
       code = generateRecoveryCode()
       await setSetting('recoveryCode', code)
-      alert(`Your recovery code — write it down, it is shown only once:\n\n${code}\n\nWithout it, backups cannot be restored.`)
+      alert(`Your recovery code, write it down, it is shown only once:\n\n${code}\n\nWithout it, backups cannot be restored.`)
     }
     await setSetting(SK.backupEndpoint, endpoint)
     try {
       await pushBackup(endpoint, code)
-      setStatus('Backed up (zero-knowledge — the server cannot read it).')
+      setStatus('Backed up (zero-knowledge, the server cannot read it).')
     } catch (e) {
       setStatus(e instanceof Error ? e.message : 'Backup failed.')
     }
@@ -787,7 +787,7 @@ export function Settings() {
       <Section title="Privacy & lock">
         <button className="setting-row" onClick={s.hasPin ? removePin : setPin}>
           <span>PIN lock</span>
-          <span className="muted">{s.hasPin ? 'On — tap to remove' : 'Off'}</span>
+          <span className="muted">{s.hasPin ? 'On, tap to remove' : 'Off'}</span>
         </button>
         {isNative && (
           <button className="setting-row" disabled={capabilityBusy} onClick={toggleBiometricLock}>
@@ -1082,7 +1082,7 @@ export function Settings() {
         )}
       </Section>
 
-      <Section title="Danger zone">
+      <Section title="Danger zone" danger>
         <button className="setting-row" onClick={wipe} style={{ color: 'var(--red-500)' }}>
           <span>Delete all data</span>
           <span>›</span>
@@ -1091,19 +1091,35 @@ export function Settings() {
 
       <p className="muted" style={{ textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
         Selenya is open source (AGPL-3.0) and not affiliated with Flo Health Inc. Not a medical
-        device. Removing the app deletes its local history — keep an encrypted backup.
+        device. Removing the app deletes its local history, keep an encrypted backup.
+        <br />
+        <a href="https://github.com/kshitij406/selenya" target="_blank" rel="noreferrer">
+          Source code
+        </a>
+        {' · '}
+        <a href="https://ko-fi.com/kshitijj" target="_blank" rel="noreferrer">
+          Support the developer
+        </a>
       </p>
     </div>
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  danger,
+}: {
+  title: string
+  children: React.ReactNode
+  danger?: boolean
+}) {
   return (
     <div>
-      <div className="section-label" style={{ marginBottom: 4 }}>
+      <div className={`section-label${danger ? ' section-label-danger' : ''}`} style={{ marginBottom: 4 }}>
         {title}
       </div>
-      <div className="card" style={{ padding: '0 16px' }}>
+      <div className={`card${danger ? ' card-danger' : ''}`} style={{ padding: '0 16px' }}>
         {children}
       </div>
     </div>

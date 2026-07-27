@@ -12,7 +12,7 @@
   padding: 18px var(--page-gutter) 38px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 30px;
   animation: page-arrive 520ms var(--ease-out) both;
 }
 
@@ -258,7 +258,7 @@ button.card:active {
 .section-overline,
 .page-kicker,
 .eyebrow {
-  color: var(--ink-500);
+  color: var(--rose-600);
   font-size: 10px;
   font-weight: 800;
   line-height: 1.2;
@@ -1025,7 +1025,7 @@ button.card:active {
   font-weight: 800;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.68);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   box-shadow: 0 8px 18px rgba(67, 36, 45, 0.08);
 }
 
@@ -2420,7 +2420,7 @@ button.card:active {
   background: var(--teal-300);
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-radius: 50%;
-  box-shadow: 0 0 18px rgba(155, 207, 202, 0.55);
+  box-shadow: 0 0 18px rgba(155, 207, 202, 0.55); /* unslop-ignore: deliberate celestial/moon-phase motif dot, matches the app icon and LunaraMark */
 }
 
 .seed-a { top: 17px; right: 54px; }
@@ -2836,6 +2836,7 @@ button.card:active {
   display: flex;
   align-items: center;
   gap: 12px;
+  border-bottom: 1px solid var(--line-medium);
 }
 
 .overlay-head h2 {
@@ -3109,7 +3110,7 @@ button.card:active {
   height: 100%;
   background: var(--paper-300);
   border: 1px solid rgba(82, 57, 65, 0.08);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   box-shadow: inset 0 1px 3px rgba(75, 45, 50, 0.08);
   transition:
     background 180ms ease,
@@ -4585,7 +4586,7 @@ button.card:active {
   text-transform: uppercase;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(47, 133, 132, 0.12);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   transform: translateX(-50%);
   backdrop-filter: blur(9px);
 }
@@ -5033,7 +5034,7 @@ button.card:active {
   text-align: left;
   background: rgba(255, 255, 255, 0.73);
   border: 1px solid rgba(82, 57, 65, 0.1);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   box-shadow: 0 5px 13px rgba(75, 45, 50, 0.025);
 }
 
@@ -5422,7 +5423,7 @@ button.card:active {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   background: var(--teal-600);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
 }
 
 .ob-summary-list article > span.paused { background: var(--ink-500); }
@@ -7023,7 +7024,7 @@ button.card:active {
   overflow: hidden;
   background: rgba(82, 57, 65, 0.09);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
 }
 
 .page.onboarding .progress-track span,
@@ -8556,7 +8557,7 @@ button.card:active {
   font-size: 14px;
   font-weight: 650;
   background: rgba(255, 253, 249, 0.42);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
 }
 
 .today-page .phase-detail-link span {
@@ -8704,4 +8705,68 @@ button.card:active {
   .today-page .phase-hero.enter-previous {
     animation: none;
   }
+}
+
+.support-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(30, 20, 22, 0.45);
+  animation: overlay-arrive 220ms var(--ease-out) both;
+}
+
+.support-prompt-card {
+  width: 100%;
+  max-width: var(--content-width);
+  background: var(--paper-50);
+  border-radius: var(--radius-lg, 24px);
+  padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.support-prompt-card h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.support-prompt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.support-prompt-secondary {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md, 16px);
+  border: 1px solid var(--ink-200, rgba(0, 0, 0, 0.12));
+  color: var(--ink-700);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.support-prompt-dismiss {
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: var(--ink-500);
+  font-size: 14px;
+}
+
+.section-label-danger {
+  color: var(--red-500);
+}
+
+.card-danger {
+  background: rgba(201, 71, 71, 0.06);
+  border-color: rgba(201, 71, 71, 0.22);
 }

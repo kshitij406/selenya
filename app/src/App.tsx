@@ -6,6 +6,7 @@ import { CalendarScreen } from './components/CalendarScreen'
 import { DoctorReport } from './components/DoctorReport'
 import { LogSheet } from './components/LogSheet'
 import { PinLock } from './components/PinLock'
+import { SupportPrompt } from './components/SupportPrompt'
 import { TabBar } from './components/TabBar'
 import { ensureHealthProfile, getHealthProfile, getSetting, SK } from './db/schema'
 import { warmDbKey } from './db/encryption'
@@ -56,6 +57,7 @@ export default function App() {
     setLocked,
     articleSlug,
     setArticleSlug,
+    supportPromptOpen,
   } = useApp()
 
   const [ready, setReady] = useState(false)
@@ -160,6 +162,7 @@ export default function App() {
         <TrackerCustomizeScreen onBack={() => setTrackerCustomizeOpen(false)} />
       )}
       {articleSlug && <ArticleScreen slug={articleSlug} onClose={() => setArticleSlug(null)} />}
+      {supportPromptOpen && <SupportPrompt />}
     </>
   )
 }

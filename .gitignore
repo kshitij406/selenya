@@ -44,5 +44,9 @@ app/android/.idea/
 .env
 .env.*
 !.env.example
+
+# Release signing — never commit the keystore or its passwords
+app/android/key.properties
+app/android/keystores/
 app/ios/App/DeviceDerivedData/
 app/ios/App/**/DerivedData*/

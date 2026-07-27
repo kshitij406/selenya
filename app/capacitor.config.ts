@@ -4,14 +4,14 @@ const config: CapacitorConfig = {
   appId: 'app.lunara.mobile',
   appName: 'Selenya',
   webDir: 'dist',
-  backgroundColor: '#fff8fa',
+  backgroundColor: '#FFFDF9',
   ios: {
     contentInset: 'never',
     preferredContentMode: 'mobile',
     scrollEnabled: true,
   },
   android: {
-    backgroundColor: '#fff8fa',
+    backgroundColor: '#FFFDF9',
     allowMixedContent: false,
   },
   plugins: {
@@ -21,13 +21,13 @@ const config: CapacitorConfig = {
     },
     SplashScreen: {
       launchAutoHide: false,
-      backgroundColor: '#fff8fa',
+      backgroundColor: '#FFFDF9',
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',
     },
     StatusBar: {
       style: 'LIGHT',
-      backgroundColor: '#fff8fa',
+      backgroundColor: '#FFFDF9',
       overlaysWebView: true,
     },
     LocalNotifications: {
