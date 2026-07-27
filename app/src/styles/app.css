@@ -353,6 +353,7 @@ button.card:active {
 
 .log-group {
   position: relative;
+  flex-shrink: 0;
   padding: 17px;
   overflow: hidden;
   background:
@@ -3198,7 +3199,7 @@ button.card:active {
   min-height: 70px;
   padding: 11px 18px;
   display: grid;
-  grid-template-columns: 39px minmax(0, 1fr) 78px 42px;
+  grid-template-columns: 39px minmax(0, 1fr) 92px 42px;
   align-items: center;
   gap: 10px;
   border-bottom: 1px solid var(--line-soft);
@@ -3272,7 +3273,8 @@ button.card:active {
 }
 
 .reminder-time-field input {
-  width: 78px;
+  width: 92px;
+  padding: 0 6px;
 }
 
 .reminder-time-field input:disabled {
@@ -3294,7 +3296,7 @@ button.card:active {
 @media (max-width: 390px) {
   .reminder-plan {
     padding-inline: 14px;
-    grid-template-columns: 35px minmax(0, 1fr) 72px 42px;
+    grid-template-columns: 35px minmax(0, 1fr) 86px 42px;
     gap: 8px;
   }
 
@@ -3304,7 +3306,7 @@ button.card:active {
   }
 
   .reminder-time-field input {
-    width: 72px;
+    width: 86px;
     padding-inline: 5px;
   }
 
