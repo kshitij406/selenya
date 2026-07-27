@@ -1,23 +1,23 @@
-# Lunara
+# Selenya
 
 > This is a fork of [Blueturboguy07/lunara](https://github.com/Blueturboguy07/lunara),
 > published under the same AGPL-3.0 license. See the commit history for the
 > changes made here.
 
 > **⚠️ Unfinished — this is a work in progress.**
-> Lunara is not on the App Store or Google Play, and there is no installer to
+> Selenya is not on the App Store or Google Play, and there is no installer to
 > double-click. You build it from this repository and run it on your own phone.
 > Features are landing continuously and things will break. Do not rely on it as
 > your only record of your health data.
 
 **An open-source, local-first cycle, fertility, pregnancy, and perimenopause companion.**
 
-Lunara ships through native iOS and Android shells powered by Capacitor. Core
-tracking works without an account or Lunara-hosted user database. Optional
+Selenya ships through native iOS and Android shells powered by Capacitor. Core
+tracking works without an account or Selenya-hosted user database. Optional
 backup and AI features transmit data only after you enable them; their scope and
 security boundaries are documented in the repository.
 
-Lunara is an open-source alternative to Flo®. It is not affiliated with, endorsed by, or connected to Flo Health Inc.
+Selenya is an open-source alternative to Flo®. It is not affiliated with, endorsed by, or connected to Flo Health Inc.
 
 ## Why
 
@@ -31,7 +31,7 @@ Lunara is an open-source alternative to Flo®. It is not affiliated with, endors
 
 ---
 
-## Getting Lunara onto your phone
+## Getting Selenya onto your phone
 
 There is no download. You compile the app on a computer and install it on your
 own phone over a cable. **What you need depends on the phone you have:**
@@ -45,7 +45,7 @@ own phone over a cable. **What you need depends on the phone you have:**
 
 **iPhone + Windows is not possible.** Apple only allows iOS apps to be built and
 signed on macOS with Xcode; there is no supported Windows path, and no amount of
-setup works around it. Your options are to borrow a Mac, or run Lunara as a web
+setup works around it. Your options are to borrow a Mac, or run Selenya as a web
 app in your phone's browser (`pnpm dev`, then open the printed network URL on
 your phone) — the browser version keeps your data on the phone but has no
 widgets, notifications, or Health integration.
@@ -62,8 +62,8 @@ npm install -g pnpm
 ### 2. Get the code and build the web bundle
 
 ```sh
-git clone https://github.com/Blueturboguy07/lunara.git
-cd lunara
+git clone https://github.com/kshitij406/selenya.git
+cd selenya
 pnpm install
 pnpm --filter @lunara/app native:sync
 ```
@@ -85,13 +85,13 @@ shells load a copied bundle, not your live source.
    $99/year Developer Program. If you have never added your Apple ID, use
    *Add an Account…* in the Team dropdown.
 4. If Xcode reports the bundle identifier is unavailable, change it to something
-   unique to you (for example `app.lunara.mobile.yourname`).
+   unique to you (for example `app.selenya.mobile.yourname`).
 5. Plug in your iPhone, unlock it, and tap **Trust** if asked. Select it from the
    device dropdown at the top of the Xcode window.
 6. Press **▶ Run**.
 7. The first launch will fail with *"Untrusted Developer."* On your iPhone go to
    **Settings → General → VPN & Device Management**, tap your Apple ID, and tap
-   **Trust**. Then open Lunara again.
+   **Trust**. Then open Selenya again.
 
 > With a free Apple ID the app stops working after **7 days**. Re-run step 6 to
 > renew it. A paid Developer Program account extends this to a year.
@@ -146,7 +146,7 @@ run `pnpm test` before touching any prediction math.
 
 ## The AI companion is optional and bring-your-own-key
 
-Lunara ships no shared API key and works fully without AI. If you enable it, you
+Selenya ships no shared API key and works fully without AI. If you enable it, you
 supply your own credential:
 
 - **Anthropic** — an API key, or a token from `claude setup-token` to bill
@@ -174,7 +174,7 @@ you tick the specific categories for that message.
 - **Where the key lives.** On iOS/Android, the encryption key is generated
   once and stored in the Keychain/Keystore — the same hardware-backed secure
   storage used for your AI provider credentials, never in the database itself
-  and never in a plain/encrypted export. Running Lunara as a browser tab
+  and never in a plain/encrypted export. Running Selenya as a browser tab
   (`pnpm dev`) has no equivalent OS-level keystore, so that mode keeps the key
   in the browser's local storage instead — real protection against a casual
   IndexedDB inspection, but not the hardware-backed guarantee native builds
@@ -188,7 +188,7 @@ you tick the specific categories for that message.
 
 ## Disclaimer
 
-Lunara is not a medical device and does not diagnose, treat, cure, or prevent any condition. Predictions are estimates for informational purposes only and must not be used to prevent pregnancy.
+Selenya is not a medical device and does not diagnose, treat, cure, or prevent any condition. Predictions are estimates for informational purposes only and must not be used to prevent pregnancy.
 
 ## License
 
