@@ -249,10 +249,9 @@ export function Today() {
         getOvulations(),
         getHealthProfile(),
         getSetting(SK.pregnancyLMP),
-        db.dailyLogs
-          .where('date')
-          .belowOrEqual(selectedDate)
-          .toArray(),
+        // Plain toArray() + in-memory filter, not Dexie's .where() Collection
+        // API — doesn't support cursor-based queries (see db/encryption.ts).
+        db.dailyLogs.toArray().then((logs) => logs.filter((log) => log.date <= selectedDate)),
         db.dailyLogs.get(selectedDate),
       ])
     const forecastPeriodStarts = periodStarts.filter((date) => date <= selectedDate)

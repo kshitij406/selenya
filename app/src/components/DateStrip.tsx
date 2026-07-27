@@ -38,17 +38,17 @@ export function DateStrip({ selectedDate, prediction, onSelectDate, today }: Dat
   const visibleDays = weekStarts.flatMap((start) =>
     Array.from({ length: 7 }, (_, index) => addDays(start, index)),
   )
-  const loggedDates = useLiveQuery(
-    async () =>
-      new Set(
-        await db.dailyLogs
-          .where('date')
-          .anyOf(visibleDays)
-          .filter((log) => log.flow !== undefined)
-          .primaryKeys(),
-      ),
-    [currentWeekStart],
-  )
+  const loggedDates = useLiveQuery(async () => {
+    // Plain toArray() + in-memory filter, not Dexie's .where()/.filter()
+    // Collection API — doesn't support cursor-based queries (see db/encryption.ts).
+    const visibleSet = new Set(visibleDays)
+    const logs = await db.dailyLogs.toArray()
+    return new Set(
+      logs
+        .filter((log) => visibleSet.has(log.date) && log.flow !== undefined)
+        .map((log) => log.date),
+    )
+  }, [currentWeekStart])
 
   return (
     <div
