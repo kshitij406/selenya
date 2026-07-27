@@ -1,6 +1,8 @@
 # Feature-depth delivery map
 
-Updated: 2026-07-26
+Updated: 2026-07-27 (session 3 — safety routing, native PDF/share sheet,
+contraception regimen history, health-import provenance/conflict UI, and
+partner sharing all closed; see `handoff.md` for the detailed per-item log)
 
 ## Target and status language
 
@@ -60,7 +62,7 @@ by branch rules, while prediction-critical and consent-critical questions stay.
 | Pregnancy and ovulation tests | Verified locally | Typed pregnancy result plus OPK positive/negative; results remain observations |
 | Digestion, activity, and lifestyle | Verified locally | Typed multi-select values |
 | BBT, sleep, steps, water, weight, and notes | Verified locally | Stored as dated measurements or notes |
-| Medication/contraception adherence events | Foundation | Tracker events exist; a first-class dated regimen, dose, pack/change schedule, and history model is still missing |
+| Medication/contraception adherence events | Verified locally | Dated regimen history (method, start/stop, renewal interval) plus per-day adherence tracker events; reports interpret bleeding patterns by contraception era, not only the current setting |
 | Tracker visibility/reordering | Verified locally | Stored locally |
 | Edit/delete history and provenance | Foundation | Current value editing works; audit history and source provenance are incomplete |
 | Local import/export | Verified locally | Plain and passphrase-encrypted export/import |
@@ -81,7 +83,7 @@ by branch rules, while prediction-critical and consent-critical questions stay.
 | “Why this estimate” explanation | Verified locally | Today exposes source, range, evidence, exclusions, and reasons |
 | Pregnancy dating engine | Verified locally | Preserves input method and clinician/art/user authority; calculated dates are provisional |
 | Deterministic safety rules | Verified locally | Explicit bleeding, pregnancy/pelvic-pain, postmenopausal-bleeding, and self-harm combinations produce sourced care levels |
-| Safety workflow integration | Foundation | Engine is tested; not every logger, report, article, and assistant entry point invokes it |
+| Safety workflow integration | Verified locally | Wired into the logger (check-in section + inline banner), Today, cycle report (flags the report window), and pregnancy screen; assistant already had its own text-based intercept |
 | Pregnancy-chance probability | Not implemented by design | Selenya uses qualitative timing; it does not fabricate a numeric probability |
 | Future symptom forecast | Missing | No validated prospective symptom model |
 | Diagnosis or contraceptive mode | Excluded | Selenya is not a medical device and predictions must not be used to prevent pregnancy |
@@ -112,8 +114,8 @@ by branch rules, while prediction-critical and consent-critical questions stay.
 | BBT/OPK observation series | Verified locally | Plotting series only; no exact ovulation confirmation |
 | Cycle report UI | Verified locally | Methodology, data sufficiency, patterns, bleeding, phase summaries, and fertility observations |
 | Doctor summary | Implemented | Print/save-as-PDF view, methodology, data range, and opt-in sensitive sections |
-| Native PDF/share flow | Missing | Browser print exists; platform-native document generation and sharesheet are not wired |
-| Imported-source provenance/conflict UI | Missing | Health samples have source fields, but reconciliation and report provenance are incomplete |
+| Native PDF/share flow | Implemented (iOS) / Foundation (Android) | iOS: real PDF generation + native share sheet. Android: no public API lets an app drive the WebView-to-PDF adapter outside the system print dialog (confirmed via a real compile failure, not a guess) — its existing "Save as PDF" print destination is the platform-legitimate equivalent |
+| Imported-source provenance/conflict UI | Verified locally | Per-field "Imported from X" badges in the logger, an actual conflict list (not just a count) surfaced in Settings, and a revocation action that clears imported values without touching manual entries |
 
 ## Reminders and native platform
 
@@ -127,8 +129,9 @@ by branch rules, while prediction-critical and consent-critical questions stay.
 | Capacitor iOS and Android shells | Implemented | Native projects, bundled offline assets, and debug build workflows exist |
 | Keychain/Keystore vault | Implemented | Secret store/read/delete bridges exist; physical-device and recovery validation remain |
 | PIN/biometric gate | Implemented | UI and native bridges exist; retry throttling and production recovery policy remain |
-| HealthKit/Health Connect import | Implemented | Permission-scoped types and native bridges exist; provenance, conflict, revocation, and physical-device QA remain |
+| HealthKit/Health Connect import | Implemented | Permission-scoped types and native bridges exist; provenance/conflict UI and a revocation action are done; physical-device QA remains |
 | iOS/Android widgets | Implemented | Redacted foreground snapshot publishing exists; background extensions redraw the last snapshot |
+| Partner sharing (read-only mirror) | Verified locally | Zero-knowledge relay push/pull (reuses the backup Worker with a distinct code namespace), read-only enforcement gated at the logger, destructive-merge confirmation before viewing a partner's data. No automatic background sync yet — push/pull are manual (Settings button / Today "Sync now"), not on save or app-foreground |
 | Store distribution | External | Signing, developer accounts, privacy declarations, store metadata, and review |
 
 ## Content and assistant
@@ -149,7 +152,6 @@ by branch rules, while prediction-critical and consent-critical questions stay.
 The requested scope includes the AI assistant and excludes:
 
 - Community / Secret Chats
-- Partner sharing or synchronization
 - Symptom Checker
 - Guided Journey
 

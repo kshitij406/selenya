@@ -1,3 +1,5 @@
+import type { SafetyCheckIn } from '../db/schema'
+
 export type SafetyUrgency = 'none' | 'routine' | 'same-day' | 'emergency'
 
 export type PregnancySafetyStatus = 'none' | 'possible' | 'confirmed'
@@ -321,5 +323,54 @@ export function evaluateSafetyTriage(input: SafetyTriageInput): SafetyTriageResu
     reasons,
     sourceIds,
     caveat: CAVEAT,
+  }
+}
+
+/**
+ * Maps a day's `SafetyCheckIn` answers (plus context the check-in itself
+ * doesn't carry) onto `SafetyTriageInput`. The only real translation is
+ * `heavySoakingTwoHoursPlus` — one UI checkbox standing in for the engine's
+ * two-field AND condition (see `hasHeavyBleedingThreshold` above).
+ */
+export function buildSafetyTriageInput(
+  checkIn: SafetyCheckIn | undefined,
+  context: {
+    pregnancyStatus?: PregnancySafetyStatus
+    bleedingDurationDays?: number
+  } = {},
+): SafetyTriageInput {
+  if (!checkIn) {
+    return {
+      pregnancy: context.pregnancyStatus ? { status: context.pregnancyStatus } : undefined,
+      bleeding: Number.isFinite(context.bleedingDurationDays)
+        ? { durationDays: context.bleedingDurationDays }
+        : undefined,
+    }
+  }
+  return {
+    mentalHealth: { thoughtsOfSelfHarm: checkIn.thoughtsOfSelfHarm },
+    bleeding: {
+      soakedProductsPerHour: checkIn.heavySoakingTwoHoursPlus ? 1 : undefined,
+      consecutiveHours: checkIn.heavySoakingTwoHoursPlus ? 2 : undefined,
+      dizziness: checkIn.dizziness,
+      lightheadedness: checkIn.lightheadedness,
+      chestPain: checkIn.chestPain,
+      shortnessOfBreath: checkIn.shortnessOfBreath,
+      betweenPeriods: checkIn.bleedingBetweenPeriods,
+      afterMenopause: checkIn.bleedingAfterMenopause,
+      durationDays: context.bleedingDurationDays,
+    },
+    pregnancy: {
+      status: context.pregnancyStatus,
+      vaginalBleeding: checkIn.pregnancyVaginalBleeding,
+      pelvicPain: checkIn.pregnancyPelvicPain,
+      fainting: checkIn.pregnancyFainting,
+      shoulderPain: checkIn.pregnancyShoulderPain,
+      suddenSeverePelvicPain: checkIn.suddenSeverePelvicPain,
+    },
+    pelvicPain: {
+      suddenSevere: checkIn.suddenSeverePelvicPain,
+      persistentOrRecurring: checkIn.persistentOrRecurringPelvicPain,
+    },
   }
 }

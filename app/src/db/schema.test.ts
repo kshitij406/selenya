@@ -1,12 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  activeContraceptionRegimen,
+  addContraceptionRegimen,
   createDefaultHealthProfile,
   dailyLogHasEntry,
   db,
+  deleteContraceptionRegimen,
+  getContraceptionRegimens,
   getHealthProfile,
   normalizeDailyLog,
   normalizeHealthProfile,
   SK,
+  updateContraceptionRegimen,
+  type ContraceptionRegimenEntry,
 } from './schema'
 
 afterEach(() => {
@@ -136,5 +142,77 @@ describe('DailyLog compatibility and coverage', () => {
     expect(dailyLogHasEntry({ date: '2026-07-26', digestion: ['bloating'] })).toBe(true)
     expect(dailyLogHasEntry({ date: '2026-07-26', activities: ['walking'] })).toBe(true)
     expect(dailyLogHasEntry({ date: '2026-07-26', lifestyle: ['travel'] })).toBe(true)
+  })
+})
+
+describe('contraception regimen history', () => {
+  it('generates an id and timestamps when adding a regimen', async () => {
+    const put = vi.spyOn(db.contraceptionRegimens, 'put').mockResolvedValue('' as never)
+
+    const entry = await addContraceptionRegimen({ method: 'copper-iud', startDate: '2024-01-01' })
+
+    expect(entry.id).toBeTruthy()
+    expect(entry.createdAt).toBe(entry.updatedAt)
+    expect(put).toHaveBeenCalledWith(entry)
+  })
+
+  it('lists regimens most-recently-started first', async () => {
+    vi.spyOn(db.contraceptionRegimens, 'toArray').mockResolvedValue([
+      { id: 'old', method: 'copper-iud', startDate: '2024-01-01', createdAt: '', updatedAt: '' },
+      {
+        id: 'new',
+        method: 'combined-pill-patch-ring',
+        startDate: '2026-01-01',
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+
+    const all = await getContraceptionRegimens()
+    expect(all.map((entry) => entry.id)).toEqual(['new', 'old'])
+  })
+
+  it('merges a patch onto the existing entry and refreshes updatedAt', async () => {
+    const existing: ContraceptionRegimenEntry = {
+      id: 'x',
+      method: 'injection',
+      startDate: '2026-01-01',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    }
+    vi.spyOn(db.contraceptionRegimens, 'get').mockResolvedValue(existing)
+    const put = vi.spyOn(db.contraceptionRegimens, 'put').mockResolvedValue('' as never)
+
+    await updateContraceptionRegimen('x', { endDate: '2026-04-01' })
+
+    expect(put).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'x', endDate: '2026-04-01', createdAt: existing.createdAt }),
+    )
+    expect(put.mock.calls[0][0].updatedAt).not.toBe(existing.updatedAt)
+  })
+
+  it('deletes a regimen by id', async () => {
+    const del = vi.spyOn(db.contraceptionRegimens, 'delete').mockResolvedValue(undefined)
+    await deleteContraceptionRegimen('x')
+    expect(del).toHaveBeenCalledWith('x')
+  })
+
+  it('finds the regimen active on a given date, including open-ended entries', () => {
+    const entries: ContraceptionRegimenEntry[] = [
+      {
+        id: 'a',
+        method: 'copper-iud',
+        startDate: '2024-01-01',
+        endDate: '2025-06-01',
+        createdAt: '',
+        updatedAt: '',
+      },
+      { id: 'b', method: 'implant', startDate: '2025-06-02', createdAt: '', updatedAt: '' },
+    ]
+
+    expect(activeContraceptionRegimen(entries, '2024-06-01')?.id).toBe('a')
+    expect(activeContraceptionRegimen(entries, '2026-01-01')?.id).toBe('b')
+    expect(activeContraceptionRegimen(entries, '2025-06-01')?.id).toBe('a')
+    expect(activeContraceptionRegimen(entries, '2020-01-01')).toBeUndefined()
   })
 })

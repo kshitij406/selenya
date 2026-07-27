@@ -50,3 +50,6 @@ app/android/key.properties
 app/android/keystores/
 app/ios/App/DeviceDerivedData/
 app/ios/App/**/DerivedData*/
+
+# Internal scratch planning docs — not meant for the public repo
+docs/sql_plan.md

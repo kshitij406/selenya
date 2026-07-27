@@ -111,6 +111,25 @@ public class LunaraNativePlugin extends Plugin {
 
     @PluginMethod
     public void printReport(PluginCall call) {
+        openPrintDialog(call);
+    }
+
+    /**
+     * Android has no public API to render a WebView to PDF bytes without
+     * user interaction: {@link PrintDocumentAdapter.LayoutResultCallback}
+     * and {@link PrintDocumentAdapter.WriteResultCallback} both have
+     * package-private constructors, so an app cannot drive the adapter
+     * itself and must go through {@link PrintManager}. That dialog's
+     * "Save as PDF" destination is the legitimate platform equivalent of
+     * iOS's PDF-then-share-sheet flow (see the Swift side), so `shareReport`
+     * intentionally opens the same print dialog as `printReport` here.
+     */
+    @PluginMethod
+    public void shareReport(PluginCall call) {
+        openPrintDialog(call);
+    }
+
+    private void openPrintDialog(PluginCall call) {
         Activity activity = getActivity();
         if (activity == null) {
             call.reject("The report screen is unavailable.", "REPORT_VIEW_UNAVAILABLE");

@@ -1,5 +1,14 @@
 import { decryptJSON, encryptJSON, type Envelope } from '../crypto/vault'
-import { db, SK, type ContentBookmark, type DailyLog, type Setting } from './schema'
+import {
+  db,
+  getHealthProfile,
+  putHealthProfile,
+  SK,
+  type ContentBookmark,
+  type DailyLog,
+  type HealthProfile,
+  type Setting,
+} from './schema'
 
 /** Settings that must never leave the device. */
 const SECRET_KEYS: string[] = [SK.pinSalt, SK.pinHash, SK.aiKey]
@@ -66,13 +75,16 @@ export interface ExportPayload {
   dailyLogs: DailyLog[]
   settings: Setting[]
   contentBookmarks: ContentBookmark[]
+  /** Added later — optional so older export files and existing tests still round-trip. */
+  healthProfile?: HealthProfile
 }
 
 export async function collectExport(): Promise<ExportPayload> {
-  const [dailyLogs, settings, contentBookmarks] = await Promise.all([
+  const [dailyLogs, settings, contentBookmarks, healthProfile] = await Promise.all([
     db.dailyLogs.toArray(),
     db.settings.toArray(),
     db.contentBookmarks.toArray(),
+    getHealthProfile(),
   ])
   return {
     app: 'lunara',
@@ -81,6 +93,7 @@ export async function collectExport(): Promise<ExportPayload> {
     dailyLogs,
     settings: settings.filter((s) => !SECRET_KEYS.includes(s.key)),
     contentBookmarks,
+    healthProfile,
   }
 }
 
@@ -100,6 +113,10 @@ export async function applyImport(payload: ExportPayload): Promise<number> {
     await db.settings.bulkPut(settings)
     await db.contentBookmarks.bulkPut(contentBookmarks)
   })
+  // putHealthProfile normalizes any shape (including garbage) to a complete,
+  // safe HealthProfile — no separate type guard needed, same as every other
+  // caller that feeds it untrusted/partial input.
+  if (payload.healthProfile) await putHealthProfile(payload.healthProfile)
   return dailyLogs.length
 }
 

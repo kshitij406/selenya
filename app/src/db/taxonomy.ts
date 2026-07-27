@@ -5,6 +5,7 @@
  */
 import type {
   ActivityEvent,
+  ContraceptionMethod,
   DigestionEvent,
   Discharge,
   Flow,
@@ -14,6 +15,27 @@ import type {
   SymptomImpairment,
   SymptomSeverity,
 } from './schema'
+
+export const CONTRACEPTION_METHOD_LABELS: Record<ContraceptionMethod, string> = {
+  none: 'None',
+  'combined-pill-patch-ring': 'Combined pill, patch, or ring',
+  'progestin-only-pill': 'Progestin-only pill',
+  injection: 'Injection',
+  implant: 'Implant',
+  'hormonal-iud': 'Hormonal IUD',
+  'copper-iud': 'Copper IUD',
+  barrier: 'Condoms or another barrier method',
+  sterilization: 'Sterilization',
+  other: 'Another method',
+  unknown: 'Unknown',
+  'prefer-not-to-say': 'Prefer not to say',
+}
+
+/** Methods with a regular renewal cadence — used to prefill/suggest `renewalIntervalDays`. */
+export const CONTRACEPTION_RENEWAL_DAYS: Partial<Record<ContraceptionMethod, number>> = {
+  'combined-pill-patch-ring': 28,
+  injection: 90,
+}
 
 export const FLOWS: { id: Flow; label: string; icon: string }[] = [
   { id: 'light', label: 'Light', icon: '💧' },

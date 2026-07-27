@@ -19,6 +19,7 @@ import { Settings } from './screens/Settings'
 import { Today } from './screens/Today'
 import { isNative } from './native/runtime'
 import {
+  ContraceptionScreen,
   CycleReportScreen,
   PerimenopauseScreen,
   PregnancyDetailScreen,
@@ -53,6 +54,8 @@ export default function App() {
     setTtcDetailOpen,
     trackerCustomizeOpen,
     setTrackerCustomizeOpen,
+    contraceptionOpen,
+    setContraceptionOpen,
     locked,
     setLocked,
     articleSlug,
@@ -161,6 +164,7 @@ export default function App() {
       {trackerCustomizeOpen && (
         <TrackerCustomizeScreen onBack={() => setTrackerCustomizeOpen(false)} />
       )}
+      {contraceptionOpen && <ContraceptionScreen onBack={() => setContraceptionOpen(false)} />}
       {articleSlug && <ArticleScreen slug={articleSlug} onClose={() => setArticleSlug(null)} />}
       {supportPromptOpen && <SupportPrompt />}
     </>

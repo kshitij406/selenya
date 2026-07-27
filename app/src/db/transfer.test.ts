@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyImport, type ExportPayload } from './transfer'
-import { db, SK } from './schema'
+import { createDefaultHealthProfile, db, SK } from './schema'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -14,7 +14,9 @@ function mockDbWrites() {
   const dailyLogsBulkPut = vi.spyOn(db.dailyLogs, 'bulkPut').mockResolvedValue(undefined as never)
   const settingsBulkPut = vi.spyOn(db.settings, 'bulkPut').mockResolvedValue(undefined as never)
   const bookmarksBulkPut = vi.spyOn(db.contentBookmarks, 'bulkPut').mockResolvedValue(undefined as never)
-  return { dailyLogsBulkPut, settingsBulkPut, bookmarksBulkPut }
+  vi.spyOn(db.healthProfiles, 'get').mockResolvedValue(undefined)
+  const healthProfilePut = vi.spyOn(db.healthProfiles, 'put').mockResolvedValue('primary' as never)
+  return { dailyLogsBulkPut, settingsBulkPut, bookmarksBulkPut, healthProfilePut }
 }
 
 function basePayload(overrides: Partial<ExportPayload> = {}): ExportPayload {
@@ -86,5 +88,17 @@ describe('applyImport', () => {
     expect(bookmarksBulkPut).toHaveBeenCalledWith([
       { slug: 'cycle-basics', savedAt: '2026-07-26T00:00:00.000Z' },
     ])
+  })
+
+  it('applies an included health profile, and skips it when absent', async () => {
+    const withProfile = mockDbWrites()
+    const profile = createDefaultHealthProfile('2026-07-26T00:00:00.000Z')
+    await applyImport(basePayload({ healthProfile: { ...profile, primaryGoal: 'pregnancy' } }))
+    expect(withProfile.healthProfilePut).toHaveBeenCalledOnce()
+    expect(withProfile.healthProfilePut.mock.calls[0][0].primaryGoal).toBe('pregnancy')
+
+    const withoutProfile = mockDbWrites()
+    await applyImport(basePayload())
+    expect(withoutProfile.healthProfilePut).not.toHaveBeenCalled()
   })
 })

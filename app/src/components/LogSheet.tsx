@@ -8,6 +8,7 @@ import {
   clearHealthImportProvenance,
   dailyLogHasEntry,
   db,
+  getHealthProfile,
   getSetting,
   normalizeDailyLog,
   type ActivityEvent,
@@ -15,13 +16,16 @@ import {
   type DigestionEvent,
   type Discharge,
   type Flow,
+  type HealthImportField,
   type IntimacyEvent,
   type LegacySexEvent,
   type LifestyleEvent,
+  type SafetyCheckIn,
   type SymptomImpairment,
   type SymptomRating,
   type SymptomSeverity,
 } from '../db/schema'
+import { buildSafetyTriageInput, evaluateSafetyTriage, type PregnancySafetyStatus } from '../engine/safety'
 import {
   ACTIVITY_EVENTS,
   DIGESTION_EVENTS,
@@ -39,15 +43,52 @@ import {
 import { formatLong } from '../lib/dates'
 import { nativeTap } from '../native/runtime'
 import type { TrackerFocus } from '../state/appStore'
+import { usePartnerMode } from '../state/partnerMode'
+import { SafetyBanner } from './SafetyBanner'
 import { Sheet } from './Sheet'
 
 function toggle<T>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item]
 }
 
+const SAFETY_TOGGLES: { id: keyof SafetyCheckIn; label: string }[] = [
+  { id: 'heavySoakingTwoHoursPlus', label: 'Soaking a pad/tampon hourly, 2+ hrs' },
+  { id: 'dizziness', label: 'Dizziness' },
+  { id: 'lightheadedness', label: 'Lightheadedness' },
+  { id: 'chestPain', label: 'Chest pain' },
+  { id: 'shortnessOfBreath', label: 'Trouble breathing' },
+  { id: 'bleedingBetweenPeriods', label: 'Bleeding between periods' },
+  { id: 'bleedingAfterMenopause', label: 'Bleeding after menopause' },
+  { id: 'suddenSeverePelvicPain', label: 'Sudden severe pelvic pain' },
+  { id: 'persistentOrRecurringPelvicPain', label: 'Pelvic pain that keeps recurring' },
+]
+
+const PREGNANCY_SAFETY_TOGGLES: { id: keyof SafetyCheckIn; label: string }[] = [
+  { id: 'pregnancyVaginalBleeding', label: 'Vaginal bleeding' },
+  { id: 'pregnancyPelvicPain', label: 'Pelvic pain' },
+  { id: 'pregnancyFainting', label: 'Fainting' },
+  { id: 'pregnancyShoulderPain', label: 'Shoulder pain' },
+]
+
 interface LabeledOption<T extends string> {
   id: T
   label: string
+}
+
+const HEALTH_IMPORT_PROVIDER_LABELS: Record<string, string> = {
+  'apple-health': 'Apple Health',
+  'health-connect': 'Health Connect',
+}
+
+/** Shown next to a field's label so the user knows a value came from an import, not their own entry, before they edit it away. */
+function ImportBadge({ log, field }: { log: DailyLog; field: HealthImportField }) {
+  const provenance = log.healthImports?.[field]
+  if (!provenance) return null
+  return (
+    <span className="chip" style={{ fontSize: 10, padding: '2px 8px', opacity: 0.75 }}>
+      Imported · {HEALTH_IMPORT_PROVIDER_LABELS[provenance.provider] ?? provenance.provider}
+    </span>
+  )
 }
 
 function filteredOptions<T extends string>(
@@ -114,6 +155,7 @@ export function LogSheet({
   initialFocus?: TrackerFocus
   onClose: () => void
 }) {
+  const partnerMode = usePartnerMode()
   const existing = useLiveQuery(() => db.dailyLogs.get(date), [date])
   const customizationJSON = useLiveQuery(() => getSetting(TRACKER_CUSTOMIZATION_KEY), [])
   const [draft, setDraft] = useState<DailyLog>({ date })
@@ -146,6 +188,26 @@ export function LogSheet({
   const customization = normalizeTrackerCustomization(storedCustomization)
   const isVisible = (id: string) => !customization.hidden.includes(id)
   const sectionStyle = (id: string) => ({ order: customization.order.indexOf(id) })
+
+  const healthProfile = useLiveQuery(() => getHealthProfile(), [])
+  const pregnancyStatus: PregnancySafetyStatus = healthProfile?.reproductive.pregnancyDating
+    ? 'confirmed'
+    : healthProfile?.primaryGoal === 'pregnancy'
+      ? 'confirmed'
+      : draft.pregnancyTest === 'positive' || draft.pregnancyTest === 'faint'
+        ? 'possible'
+        : 'none'
+
+  const toggleSafety = (id: keyof SafetyCheckIn) => {
+    void nativeTap()
+    const current = draft.safetyCheckIn ?? {}
+    const next = { ...current, [id]: !current[id] }
+    setDraft({ ...draft, safetyCheckIn: next })
+  }
+
+  const safetyResult = evaluateSafetyTriage(
+    buildSafetyTriageInput(draft.safetyCheckIn, { pregnancyStatus }),
+  )
 
   async function save() {
     if (!dailyLogHasEntry(draft)) await db.dailyLogs.delete(date)
@@ -253,6 +315,41 @@ export function LogSheet({
   const visibleActivities = filteredOptions(query, 'Movement activity exercise', ACTIVITY_EVENTS)
   const visibleLifestyle = filteredOptions(query, 'Daily context lifestyle', LIFESTYLE_EVENTS)
 
+  if (partnerMode.active) {
+    const summary: [string, string][] = []
+    if (draft.flow) summary.push(['Flow', draft.flow])
+    if (draft.symptoms?.length) summary.push(['Symptoms', draft.symptoms.join(', ')])
+    if (draft.moods?.length) summary.push(['Mood', draft.moods.join(', ')])
+    if (draft.discharge) summary.push(['Discharge', draft.discharge])
+    if (draft.bbt !== undefined) summary.push(['BBT', `${(draft.bbt / 100).toFixed(2)}°C`])
+    if (draft.opk) summary.push(['Ovulation test', draft.opk])
+    if (draft.pregnancyTest) summary.push(['Pregnancy test', draft.pregnancyTest])
+    if (draft.notes) summary.push(['Notes', draft.notes])
+
+    return (
+      <Sheet title={formatLong(date)} onClose={onClose}>
+        <div className="field" style={{ order: -1 }}>
+          <p className="muted">
+            You're viewing {partnerMode.label} data on this device — read-only. Logging happens on
+            their device and appears here after the next sync.
+          </p>
+          {summary.length === 0 ? (
+            <p className="muted">Nothing logged for this day.</p>
+          ) : (
+            <div className="card" style={{ marginTop: 8 }}>
+              {summary.map(([label, value]) => (
+                <div key={label} className="setting-row static-row">
+                  <span>{label}</span>
+                  <span className="muted">{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Sheet>
+    )
+  }
+
   return (
     <Sheet title={formatLong(date)} onClose={onClose}>
       <div className="field" style={{ order: -2 }}>
@@ -300,9 +397,58 @@ export function LogSheet({
         </div>
       </div>
 
+      <div className="log-group" style={{ order: -0.5 }}>
+        <div className="section-label">Any of these right now?</div>
+        <div className="muted" style={{ marginTop: 3, marginBottom: 10 }}>
+          Optional. Answers here are used only for a local, non-diagnostic care-level check —
+          nothing is sent anywhere.
+        </div>
+        <div className="chip-wrap">
+          {SAFETY_TOGGLES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className="chip"
+              aria-pressed={Boolean(draft.safetyCheckIn?.[t.id])}
+              onClick={() => toggleSafety(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+          {pregnancyStatus !== 'none' &&
+            PREGNANCY_SAFETY_TOGGLES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className="chip"
+                aria-pressed={Boolean(draft.safetyCheckIn?.[t.id])}
+                onClick={() => toggleSafety(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={Boolean(draft.safetyCheckIn?.thoughtsOfSelfHarm)}
+            onClick={() => toggleSafety('thoughtsOfSelfHarm')}
+          >
+            Thoughts of self-harm
+          </button>
+        </div>
+        {safetyResult.urgency !== 'none' && (
+          <div style={{ marginTop: 12 }}>
+            <SafetyBanner result={safetyResult} />
+          </div>
+        )}
+      </div>
+
       {isVisible('flow') && visibleFlows.length > 0 && (
         <div id="tracker-flow" className="tracker-section" style={sectionStyle('flow')}>
-          <div className="section-label">Flow</div>
+          <div className="spread">
+            <div className="section-label">Flow</div>
+            <ImportBadge log={draft} field="flow" />
+          </div>
           <div className="chip-wrap">
             {visibleFlows.map((f) => (
               <button
@@ -470,7 +616,10 @@ export function LogSheet({
           <div className="row">
             {sectionMatches(query, 'fertility', 'basal body temperature bbt') && (
               <div className="field" style={{ flex: 1 }}>
-                <label htmlFor="bbt">BBT (°C)</label>
+                <div className="spread" style={{ alignItems: 'baseline' }}>
+                  <label htmlFor="bbt">BBT (°C)</label>
+                  <ImportBadge log={draft} field="bbt" />
+                </div>
                 <input
                   id="bbt"
                   type="number"
@@ -492,7 +641,10 @@ export function LogSheet({
             )}
             {sectionMatches(query, 'fertility', 'ovulation test opk') && (
               <div className="field" style={{ flex: 1 }}>
-                <label>Ovulation test</label>
+                <div className="spread" style={{ alignItems: 'baseline' }}>
+                  <label>Ovulation test</label>
+                  <ImportBadge log={draft} field="opk" />
+                </div>
                 <div className="chip-wrap">
                   {(['positive', 'negative'] as const).map((o) => (
                     <button
@@ -679,7 +831,10 @@ export function LogSheet({
           <div className="section-label">Daily measurements</div>
           <div className="measurement-grid">
         <div className="field">
-          <label htmlFor="weight">Weight (kg)</label>
+          <div className="spread" style={{ alignItems: 'baseline' }}>
+            <label htmlFor="weight">Weight (kg)</label>
+            <ImportBadge log={draft} field="weightKg" />
+          </div>
           <input
             id="weight"
             type="number"
@@ -711,7 +866,10 @@ export function LogSheet({
           />
         </div>
         <div className="field">
-          <label htmlFor="sleep">Sleep (minutes)</label>
+          <div className="spread" style={{ alignItems: 'baseline' }}>
+            <label htmlFor="sleep">Sleep (minutes)</label>
+            <ImportBadge log={draft} field="sleepMinutes" />
+          </div>
           <input
             id="sleep"
             type="number"
@@ -728,7 +886,10 @@ export function LogSheet({
           />
         </div>
         <div className="field">
-          <label htmlFor="steps">Steps</label>
+          <div className="spread" style={{ alignItems: 'baseline' }}>
+            <label htmlFor="steps">Steps</label>
+            <ImportBadge log={draft} field="steps" />
+          </div>
           <input
             id="steps"
             type="number"

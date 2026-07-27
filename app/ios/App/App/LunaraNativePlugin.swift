@@ -24,7 +24,8 @@ public final class LunaraNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "widgetStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "publishWidgetSnapshot", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearWidgetSnapshot", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "printReport", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "printReport", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "shareReport", returnType: CAPPluginReturnPromise)
     ]
 
     private let keychainService = "app.lunara.mobile.vault"
@@ -61,6 +62,68 @@ public final class LunaraNativePlugin: CAPPlugin, CAPBridgedPlugin {
             if !presented {
                 call.reject("The report export sheet could not open.", "REPORT_EXPORT_UNAVAILABLE")
             }
+        }
+    }
+
+    @objc public func shareReport(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let webView = self.webView else {
+                call.reject("The report view is unavailable.", "REPORT_VIEW_UNAVAILABLE")
+                return
+            }
+
+            let jobName = call.getString("jobName") ?? "Lunara cycle report"
+            let renderer = UIPrintPageRenderer()
+            renderer.addPrintFormatter(webView.viewPrintFormatter(), startingAtPageAt: 0)
+
+            let pageWidth: CGFloat = 612 // US Letter at 72dpi
+            let pageHeight: CGFloat = 792
+            let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+            let printableRect = pageRect.insetBy(dx: 24, dy: 36)
+            renderer.setValue(pageRect, forKey: "paperRect")
+            renderer.setValue(printableRect, forKey: "printableRect")
+
+            let pdfData = NSMutableData()
+            UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
+            for pageIndex in 0..<renderer.numberOfPages {
+                UIGraphicsBeginPDFPage()
+                renderer.drawPage(at: pageIndex, in: UIGraphicsGetPDFContextBounds())
+            }
+            UIGraphicsEndPDFContext()
+
+            guard pdfData.length > 0 else {
+                call.reject("The report could not be turned into a PDF.", "REPORT_SHARE_FAILED")
+                return
+            }
+
+            let fileName = jobName.replacingOccurrences(of: " ", with: "-") + ".pdf"
+            let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            do {
+                try pdfData.write(to: fileURL, options: .atomic)
+            } catch {
+                call.reject("The report PDF could not be saved.", "REPORT_SHARE_FAILED", error)
+                return
+            }
+
+            let activity = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+            if let popover = activity.popoverPresentationController {
+                popover.sourceView = webView
+                popover.sourceRect = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 0, height: 0)
+            }
+            activity.completionWithItemsHandler = { _, _, _, error in
+                try? FileManager.default.removeItem(at: fileURL)
+                if let error {
+                    call.reject("The share sheet failed.", "REPORT_SHARE_FAILED", error)
+                } else {
+                    call.resolve()
+                }
+            }
+
+            guard let rootController = self.bridge?.viewController else {
+                call.reject("The share sheet could not open.", "REPORT_SHARE_UNAVAILABLE")
+                return
+            }
+            rootController.present(activity, animated: true)
         }
     }
 

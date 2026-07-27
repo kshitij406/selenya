@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { DateStrip } from '../components/DateStrip'
 import { LunaraMark } from '../components/LunaraMark'
+import { SafetyBanner } from '../components/SafetyBanner'
 import { PREGNANCY_WEEKS } from '../content/pregnancyWeeks'
 import {
   db,
@@ -9,6 +10,7 @@ import {
   getSetting,
   getOvulations,
   getPeriodStarts,
+  setSetting,
   SK,
   type DailyLog,
   type Goal,
@@ -31,10 +33,17 @@ import {
   applyPredictionContext,
   periodTimingStatus,
 } from '../engine/predictionContext'
+import {
+  buildSafetyTriageInput,
+  evaluateSafetyTriage,
+  type PregnancySafetyStatus,
+} from '../engine/safety'
 import { localToday } from '../lib/dates'
 import { useHorizontalDrag } from '../lib/useHorizontalDrag'
+import { pullPartnerSnapshot } from '../lib/partnerSharing'
 import { publishWidgetSnapshot, type CycleWidgetSnapshot } from '../native/widgets'
 import { useApp, type TrackerFocus } from '../state/appStore'
+import { usePartnerMode } from '../state/partnerMode'
 
 interface DailyInsight {
   key: string
@@ -231,6 +240,27 @@ export function Today() {
   // Which way the last change moved, so the incoming day animates in from the
   // side it came from instead of always rising from below.
   const [enterFrom, setEnterFrom] = useState<'none' | 'next' | 'previous'>('none')
+  const partnerMode = usePartnerMode()
+  const [syncing, setSyncing] = useState(false)
+  const [syncError, setSyncError] = useState<string | null>(null)
+
+  async function syncPartnerData() {
+    setSyncing(true)
+    setSyncError(null)
+    try {
+      const [endpoint, code] = await Promise.all([
+        getSetting(SK.backupEndpoint),
+        getSetting(SK.partnerViewCode),
+      ])
+      if (!endpoint || !code) return
+      await pullPartnerSnapshot(endpoint, code)
+      await setSetting(SK.partnerLastSyncedAt, new Date().toISOString())
+    } catch (reason) {
+      setSyncError(reason instanceof Error ? reason.message : 'Sync failed.')
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const goToDate = (date: string, direction: 'none' | 'next' | 'previous' = 'none') => {
     setEnterFrom(direction)
@@ -305,6 +335,15 @@ export function Today() {
       })),
       forecastPeriodStarts,
     )
+    const pregnancyStatus: PregnancySafetyStatus =
+      profile.primaryGoal === 'pregnancy' || profile.reproductive.pregnancyDating
+        ? 'confirmed'
+        : selectedLog?.pregnancyTest === 'positive' || selectedLog?.pregnancyTest === 'faint'
+          ? 'possible'
+          : 'none'
+    const safetyResult = evaluateSafetyTriage(
+      buildSafetyTriageInput(selectedLog?.safetyCheckIn, { pregnancyStatus }),
+    )
     return {
       prediction: personalized.prediction,
       predictionContext: personalized,
@@ -314,6 +353,7 @@ export function Today() {
       periScore: periWindowSummary(recentLogs, selectedDate).score,
       symptomPatterns,
       selectedLog,
+      safetyResult,
     }
   }, [selectedDate])
 
@@ -700,6 +740,32 @@ export function Today() {
           today={today}
         />
       </section>
+
+      {partnerMode.active && (
+        <section aria-label="Partner viewing notice" style={{ padding: '0 4px' }}>
+          <div className="safety-banner safety-banner--routine">
+            <p className="safety-banner__headline">Viewing {partnerMode.label} cycle · read-only</p>
+            <p className="safety-banner__action">
+              Logging happens on their device. Pull the latest sync any time.
+            </p>
+            <button
+              type="button"
+              className="chip"
+              disabled={syncing}
+              onClick={() => void syncPartnerData()}
+            >
+              {syncing ? 'Syncing…' : 'Sync now'}
+            </button>
+            {syncError && <p className="safety-banner__meta">{syncError}</p>}
+          </div>
+        </section>
+      )}
+
+      {data.safetyResult.urgency !== 'none' && (
+        <section aria-label="Safety notice" style={{ padding: '0 4px' }}>
+          <SafetyBanner result={data.safetyResult} />
+        </section>
+      )}
 
       <section
         key={selectedDate}

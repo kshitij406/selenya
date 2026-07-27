@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateSafetyTriage, type SafetyTriageInput } from './safety'
+import { buildSafetyTriageInput, evaluateSafetyTriage, type SafetyTriageInput } from './safety'
 
 describe('deterministic safety triage', () => {
   it('returns a non-reassuring no-match result for empty answers', () => {
@@ -269,5 +269,38 @@ describe('deterministic safety triage', () => {
       expect(serialized).not.toContain('diagnosis:')
       expect(serialized).not.toContain('ectopic pregnancy')
     }
+  })
+})
+
+describe('buildSafetyTriageInput (DailyLog.safetyCheckIn adapter)', () => {
+  it('maps the combined heavy-soaking checkbox to both engine threshold fields', () => {
+    const input = buildSafetyTriageInput({ heavySoakingTwoHoursPlus: true })
+    expect(input.bleeding?.soakedProductsPerHour).toBe(1)
+    expect(input.bleeding?.consecutiveHours).toBe(2)
+    expect(evaluateSafetyTriage(input).urgency).toBe('same-day')
+  })
+
+  it('leaves heavy-bleeding fields unset when the checkbox is off, even with other flags on', () => {
+    const input = buildSafetyTriageInput({ dizziness: true })
+    expect(input.bleeding?.soakedProductsPerHour).toBeUndefined()
+    expect(input.bleeding?.consecutiveHours).toBeUndefined()
+    // Dizziness alone (no heavy-bleeding threshold) matches no rule.
+    expect(evaluateSafetyTriage(input).urgency).toBe('none')
+  })
+
+  it('passes through pregnancy status and duration-days context', () => {
+    const input = buildSafetyTriageInput(
+      { pregnancyVaginalBleeding: true },
+      { pregnancyStatus: 'possible', bleedingDurationDays: 9 },
+    )
+    expect(input.pregnancy?.status).toBe('possible')
+    expect(input.bleeding?.durationDays).toBe(9)
+    expect(evaluateSafetyTriage(input).urgency).toBe('same-day')
+  })
+
+  it('returns an empty-but-contextual input for an undefined check-in', () => {
+    const input = buildSafetyTriageInput(undefined, { pregnancyStatus: 'confirmed' })
+    expect(evaluateSafetyTriage(input).urgency).toBe('none')
+    expect(input.pregnancy?.status).toBe('confirmed')
   })
 })

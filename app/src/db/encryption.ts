@@ -38,6 +38,7 @@ const ENCRYPTED_TABLES: Record<string, string> = {
   settings: 'key',
   contentBookmarks: 'slug',
   healthProfiles: 'id',
+  contraceptionRegimens: 'id',
 }
 
 function toB64(buf: ArrayBuffer | Uint8Array): string {

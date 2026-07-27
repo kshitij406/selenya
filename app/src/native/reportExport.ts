@@ -3,11 +3,12 @@ import { isNative } from './runtime'
 
 interface NativeReportBridge {
   printReport(options: { jobName: string }): Promise<void>
+  shareReport(options: { jobName: string }): Promise<void>
 }
 
 export interface ReportExportDependencies {
   native?: boolean
-  bridge?: NativeReportBridge
+  bridge?: Pick<NativeReportBridge, 'printReport'>
   browserPrint?: () => void
 }
 
@@ -32,4 +33,19 @@ export async function exportCurrentReport(
 
   const browserPrint = dependencies.browserPrint ?? (() => window.print())
   browserPrint()
+}
+
+/**
+ * Renders the currently displayed report to a real PDF file and opens the
+ * platform document share sheet (Mail/Messages/AirDrop/Drive/etc.) — distinct
+ * from `exportCurrentReport`, which opens the print dialog. Native-only: on
+ * web there is no PDF-generation or share-sheet API to fall back to, so
+ * callers should hide the share action outside a native build (`isNative`).
+ */
+export async function shareCurrentReport(
+  jobName = 'Selenya cycle report',
+  dependencies: { bridge?: Pick<NativeReportBridge, 'shareReport'> } = {},
+): Promise<void> {
+  const bridge = dependencies.bridge ?? getLunaraNativeBridge<NativeReportBridge>()
+  await bridge.shareReport({ jobName })
 }

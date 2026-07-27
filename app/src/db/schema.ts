@@ -244,6 +244,29 @@ export type HealthProfilePatch = Partial<
   privacy?: Partial<HealthProfilePrivacy>
 }
 
+/**
+ * Structured answers to the small set of questions `engine/safety.ts`
+ * actually rules on. Deliberately narrow — this is not a general symptom
+ * log, it exists only to feed `evaluateSafetyTriage`.
+ */
+export interface SafetyCheckIn {
+  /** Soaking a pad/tampon at least once an hour, for at least two hours straight. */
+  heavySoakingTwoHoursPlus?: boolean
+  dizziness?: boolean
+  lightheadedness?: boolean
+  chestPain?: boolean
+  shortnessOfBreath?: boolean
+  bleedingBetweenPeriods?: boolean
+  bleedingAfterMenopause?: boolean
+  suddenSeverePelvicPain?: boolean
+  persistentOrRecurringPelvicPain?: boolean
+  pregnancyVaginalBleeding?: boolean
+  pregnancyPelvicPain?: boolean
+  pregnancyFainting?: boolean
+  pregnancyShoulderPain?: boolean
+  thoughtsOfSelfHarm?: boolean
+}
+
 export interface DailyLog {
   /** 'YYYY-MM-DD' — primary key; one log per day. */
   date: string
@@ -282,6 +305,7 @@ export interface DailyLog {
    * fields and is removed when the user edits that field by hand.
    */
   healthImports?: Partial<Record<HealthImportField, HealthImportProvenance>>
+  safetyCheckIn?: SafetyCheckIn
 }
 
 /**
@@ -339,7 +363,8 @@ export function dailyLogHasEntry(log: DailyLog): boolean {
       log.waterMl !== undefined ||
       log.sleepMinutes !== undefined ||
       log.steps !== undefined ||
-      log.notes?.trim(),
+      log.notes?.trim() ||
+      Object.values(log.safetyCheckIn ?? {}).some(Boolean),
   )
 }
 
@@ -353,10 +378,31 @@ export interface ContentBookmark {
   savedAt: string
 }
 
+/**
+ * A dated contraception or ongoing-medication regimen — the first-class
+ * history `HealthProfileReproductive.contraception` (a single current
+ * value, no dates) doesn't provide. `endDate` unset means still active.
+ */
+export interface ContraceptionRegimenEntry {
+  id: string
+  method: ContraceptionMethod
+  productName?: string
+  startDate: string
+  endDate?: string
+  /** Days between pack/patch/ring changes or injections, when regular (e.g. 28, 90). */
+  renewalIntervalDays?: number
+  /** Next change/refill/replacement date — manually set or derived from renewalIntervalDays. */
+  nextRenewalDate?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export class LunaraDB extends Dexie {
   dailyLogs!: Table<DailyLog, string>
   settings!: Table<Setting, string>
   contentBookmarks!: Table<ContentBookmark, string>
+  contraceptionRegimens!: Table<ContraceptionRegimenEntry, string>
   healthProfiles!: Table<HealthProfile, string>
 
   constructor() {
@@ -382,10 +428,19 @@ export class LunaraDB extends Dexie {
           .table<HealthProfile, string>('healthProfiles')
           .put(healthProfileFromLegacySettings(new Map(settings.map((item) => [item.key, item.value]))))
       })
+    this.version(3).stores({
+      dailyLogs: 'date',
+      cycles: 'startDate',
+      settings: 'key',
+      contentBookmarks: 'slug',
+      healthProfiles: 'id',
+      contraceptionRegimens: 'id',
+    })
     wrapTableEncryption(this.dailyLogs, 'date')
     wrapTableEncryption(this.settings, 'key')
     wrapTableEncryption(this.contentBookmarks, 'slug')
     wrapTableEncryption(this.healthProfiles, 'id')
+    wrapTableEncryption(this.contraceptionRegimens, 'id')
   }
 }
 
@@ -637,6 +692,51 @@ export async function putHealthProfile(
   return normalized
 }
 
+/** All regimen entries, most recently started first. */
+export async function getContraceptionRegimens(): Promise<ContraceptionRegimenEntry[]> {
+  const entries = await db.contraceptionRegimens.toArray()
+  return entries.sort((a, b) => (a.startDate < b.startDate ? 1 : -1))
+}
+
+/** The regimen active on a given date, if any — for era-aware report/reminder interpretation. */
+export function activeContraceptionRegimen(
+  entries: ContraceptionRegimenEntry[],
+  date: string,
+): ContraceptionRegimenEntry | undefined {
+  return entries.find((entry) => entry.startDate <= date && (!entry.endDate || entry.endDate >= date))
+}
+
+export async function addContraceptionRegimen(
+  entry: Omit<ContraceptionRegimenEntry, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<ContraceptionRegimenEntry> {
+  const now = new Date().toISOString()
+  const record: ContraceptionRegimenEntry = {
+    ...entry,
+    id: crypto.randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.contraceptionRegimens.put(record)
+  return record
+}
+
+export async function updateContraceptionRegimen(
+  id: string,
+  patch: Partial<Omit<ContraceptionRegimenEntry, 'id' | 'createdAt'>>,
+): Promise<void> {
+  const existing = await db.contraceptionRegimens.get(id)
+  if (!existing) return
+  await db.contraceptionRegimens.put({
+    ...existing,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  })
+}
+
+export async function deleteContraceptionRegimen(id: string): Promise<void> {
+  await db.contraceptionRegimens.delete(id)
+}
+
 /** Well-known settings keys. */
 export const SK = {
   onboarded: 'onboarded',
@@ -661,4 +761,12 @@ export const SK = {
   pinFailCount: 'pinFailCount',
   pinLockUntil: 'pinLockUntil',
   supportPromptShown: 'supportPromptShown',
+  /** This device's own code for sharing its data out to a partner (sharer role). */
+  partnerShareCode: 'partnerShareCode',
+  /** A code entered on this device to view someone else's shared data (viewer role). */
+  partnerViewCode: 'partnerViewCode',
+  /** 'true' when this device is a read-only partner-viewer mirror, not a primary tracker. */
+  partnerViewerMode: 'partnerViewerMode',
+  partnerViewerLabel: 'partnerViewerLabel',
+  partnerLastSyncedAt: 'partnerLastSyncedAt',
 } as const

@@ -4,6 +4,17 @@ Everything engineering-side is done (see "Done this pass" below). What's
 left requires a human with a Google account, a credit card, and legal
 judgment — none of which an agent can supply. This is that list, in order.
 
+**Update (session 3, 2026-07-27):** safety-triage routing, contraception
+regimen history, health-import provenance/conflict UI, native iOS PDF
+share, and a new **partner sharing** feature (read-only, opt-in, off by
+default) were added — see `handoff.md` for details.
+`PLAY_CONSOLE_SUBMISSION_DATA.md`'s Data Safety table now includes partner
+sharing. **Native SQLite (the P0 encrypted-database item further down this
+doc's history) was deliberately deferred** — see `sql_plan.md` for why and
+the plan for doing it as a fast-follow; the current app is not shipping
+with an encryption regression, it's shipping with the same AES-256-GCM
+app-level encryption it already had.
+
 ## Done this pass (engineering side)
 
 - Release signing: `app/android/keystores/selenya-release.keystore` +

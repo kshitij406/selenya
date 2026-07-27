@@ -15,12 +15,18 @@ import {
   setSetting,
   SK,
   type Goal,
+  type HealthImportField,
   type PermissionState,
 } from '../db/schema'
 import type { Envelope } from '../crypto/vault'
 import { applyImport, collectExport, decryptImport, encryptedExport, shareOrDownload } from '../db/transfer'
 import { pushBackup, restoreBackup } from '../lib/backup'
-import { localToday } from '../lib/dates'
+import {
+  deletePartnerSnapshot,
+  pullPartnerSnapshot,
+  pushPartnerSnapshot,
+} from '../lib/partnerSharing'
+import { formatShort, localToday } from '../lib/dates'
 import { addDays } from '../engine/cycle'
 import {
   parseReminderPreferences,
@@ -51,8 +57,10 @@ import {
 } from '../native/health'
 import {
   applyHealthSamples,
+  clearHealthImports,
   healthImportProvider,
   importAppleHealthPeriodHistory,
+  type HealthImportConflict,
 } from '../native/healthImport'
 import {
   cancelDailyReminder,
@@ -84,6 +92,15 @@ function profileHealthPermission(
 
 function profileReminderPermission(permission: PermissionState): ReminderPermission {
   return permission === 'requested' ? 'not-requested' : permission
+}
+
+const HEALTH_IMPORT_FIELD_LABELS: Record<HealthImportField, string> = {
+  flow: 'Flow',
+  bbt: 'Basal body temperature',
+  opk: 'Ovulation test',
+  weightKg: 'Weight',
+  sleepMinutes: 'Sleep',
+  steps: 'Steps',
 }
 
 const GOAL_LABELS: Record<Goal, string> = {
@@ -133,6 +150,7 @@ export function Settings() {
     setPerimenopauseOpen,
     setTtcDetailOpen,
     setTrackerCustomizeOpen,
+    setContraceptionOpen,
   } = useApp()
   const fileInput = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -142,6 +160,7 @@ export function Settings() {
   const [vaultLabel, setVaultLabel] = useState(isNative ? 'Checking…' : 'Session memory')
   const [biometrics, setBiometrics] = useState<BiometricStatus | null>(null)
   const [health, setHealth] = useState<HealthPlatformStatus | null>(null)
+  const [importConflicts, setImportConflicts] = useState<HealthImportConflict[]>([])
   const [widget, setWidget] = useState<WidgetStatus | null>(null)
   const [capabilityBusy, setCapabilityBusy] = useState(false)
   const [reminderBusy, setReminderBusy] = useState(false)
@@ -193,6 +212,12 @@ export function Settings() {
       time,
       reminderSettings,
       profile,
+      partnerShareCode,
+      partnerViewCode,
+      partnerViewerMode,
+      partnerViewerLabel,
+      partnerLastSyncedAt,
+      dailyLogCount,
     ] =
       await Promise.all([
         getSetting(SK.pregnancyLMP),
@@ -204,6 +229,12 @@ export function Settings() {
         getSetting(SK.reminderTime),
         getSetting(REMINDER_SETTINGS_KEY),
         getHealthProfile(),
+        getSetting(SK.partnerShareCode),
+        getSetting(SK.partnerViewCode),
+        getSetting(SK.partnerViewerMode),
+        getSetting(SK.partnerViewerLabel),
+        getSetting(SK.partnerLastSyncedAt),
+        db.dailyLogs.count(),
       ])
     const pregnancyLmp = profile.reproductive.pregnancyLmp ?? legacyPregnancyLmp
     const pregnancyDating =
@@ -225,6 +256,12 @@ export function Settings() {
       recoveryCode: code ?? '',
       legacyReminderTime: time,
       reminderSettings,
+      partnerShareCode: partnerShareCode ?? '',
+      partnerViewCode: partnerViewCode ?? '',
+      partnerViewerMode: partnerViewerMode === 'true',
+      partnerViewerLabel: partnerViewerLabel ?? '',
+      partnerLastSyncedAt: partnerLastSyncedAt ?? '',
+      dailyLogCount,
     }
   }, [])
 
@@ -425,6 +462,7 @@ export function Settings() {
         types: access.grantedTypes.length ? access.grantedTypes : access.supportedTypes,
       })
       const result = await applyHealthSamples(samples, provider)
+      setImportConflicts(result.skippedConflicts)
       if (!samples.length && access.platform === 'healthkit') {
         setStatus(
           'Apple Health returned no records. For privacy, iOS does not reveal whether access was denied or the selected categories are empty.',
@@ -479,6 +517,7 @@ export function Settings() {
       })
       const refreshed = await getHealthPlatformStatus()
       setHealth(refreshed)
+      setImportConflicts(result.skippedConflicts)
       if (result.authorization !== 'unavailable') {
         await recordHealthImportDecision(result.authorization)
       }
@@ -495,6 +534,24 @@ export function Settings() {
       }
     } catch (reason) {
       setStatus(reason instanceof Error ? reason.message : 'Apple Health period import failed.')
+    } finally {
+      setCapabilityBusy(false)
+    }
+  }
+
+  async function clearImportedHealthData() {
+    setCapabilityBusy(true)
+    setStatus(null)
+    try {
+      const result = await clearHealthImports()
+      setImportConflicts([])
+      setStatus(
+        result.fieldsCleared
+          ? `Cleared ${result.fieldsCleared} imported value${result.fieldsCleared === 1 ? '' : 's'} across ${result.daysChanged} day${result.daysChanged === 1 ? '' : 's'}. Manually entered values were not touched.`
+          : 'No imported values to clear.',
+      )
+    } catch (reason) {
+      setStatus(reason instanceof Error ? reason.message : 'Could not clear imported health data.')
     } finally {
       setCapabilityBusy(false)
     }
@@ -553,6 +610,86 @@ export function Settings() {
     } catch (e) {
       setStatus(e instanceof Error ? e.message : 'Restore failed.')
     }
+  }
+
+  async function startPartnerSharing() {
+    const endpoint = prompt('Backup relay URL (same Worker as backup):', s!.endpoint || '')
+    if (!endpoint) return
+    let code = s!.partnerShareCode
+    if (!code) {
+      code = generateRecoveryCode()
+      await setSetting(SK.partnerShareCode, code)
+      alert(
+        `Your partner-sharing code, shown once:\n\n${code}\n\nAnyone with this code can see everything you log — periods, symptoms, mood, notes, all of it. Only share it with someone you trust, the same way you'd treat a password.`,
+      )
+    }
+    await setSetting(SK.backupEndpoint, endpoint)
+    try {
+      await pushPartnerSnapshot(endpoint, code)
+      await setSetting(SK.partnerLastSyncedAt, new Date().toISOString())
+      setStatus('Synced. Your partner can now view this with the code.')
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : 'Partner sync failed.')
+    }
+  }
+
+  async function resyncPartnerSharing() {
+    if (!s!.endpoint || !s!.partnerShareCode) return
+    try {
+      await pushPartnerSnapshot(s!.endpoint, s!.partnerShareCode)
+      await setSetting(SK.partnerLastSyncedAt, new Date().toISOString())
+      setStatus('Synced.')
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : 'Partner sync failed.')
+    }
+  }
+
+  async function stopPartnerSharing() {
+    if (!confirm('Stop sharing your data with your partner? Their app will keep the last synced copy until they stop viewing it.')) {
+      return
+    }
+    if (s!.endpoint && s!.partnerShareCode) {
+      await deletePartnerSnapshot(s!.endpoint, s!.partnerShareCode).catch(() => {})
+    }
+    await removeSetting(SK.partnerShareCode)
+    setStatus('Partner sharing turned off.')
+  }
+
+  async function viewPartnerData() {
+    const endpoint = prompt('Backup relay URL your partner used:', s!.endpoint || '')
+    if (!endpoint) return
+    const codeInput = prompt("Enter the code your partner gave you:")
+    if (!codeInput) return
+    const code = normalizeRecoveryCode(codeInput)
+
+    if (
+      s!.dailyLogCount > 0 &&
+      !confirm(
+        `This device already has ${s!.dailyLogCount} of your own logged day${s!.dailyLogCount === 1 ? '' : 's'}. Viewing a partner's shared data merges their days into this same local database — your own entries are kept, but the two histories will be mixed together on this device from now on. Continue?`,
+      )
+    ) {
+      return
+    }
+
+    try {
+      const n = await pullPartnerSnapshot(endpoint, code)
+      const label = prompt("What should this be labeled (e.g. a name)?", '') || ''
+      await setSetting(SK.partnerViewCode, code)
+      await setSetting(SK.backupEndpoint, endpoint)
+      await setSetting(SK.partnerViewerMode, 'true')
+      await setSetting(SK.partnerViewerLabel, label)
+      await setSetting(SK.partnerLastSyncedAt, new Date().toISOString())
+      setStatus(`Now viewing ${label || 'their'} cycle (${n} days synced).`)
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : 'Could not sync partner data.')
+    }
+  }
+
+  async function stopViewingPartner() {
+    await removeSetting(SK.partnerViewCode)
+    await removeSetting(SK.partnerViewerMode)
+    await removeSetting(SK.partnerViewerLabel)
+    setStatus('Stopped viewing partner data. Their last-synced entries stay on this device until you delete them.')
   }
 
   async function saveReminderPreferences(
@@ -686,6 +823,10 @@ export function Settings() {
         </button>
         <button className="setting-row" onClick={() => setCycleReportOpen(true)}>
           <span>Cycle report &amp; patterns</span>
+          <span className="muted">›</span>
+        </button>
+        <button className="setting-row" onClick={() => setContraceptionOpen(true)}>
+          <span>Contraception &amp; medication history</span>
           <span className="muted">›</span>
         </button>
         {s.goal === 'pregnancy' && (
@@ -846,6 +987,37 @@ export function Settings() {
             timeline. Manual entries are never silently replaced, and nothing is uploaded by this
             step.
           </p>
+          {importConflicts.length > 0 && (
+            <div style={{ padding: '4px 0 8px' }}>
+              <div className="section-label" style={{ marginBottom: 4 }}>
+                Kept your entry over the import
+              </div>
+              <p className="muted" style={{ marginBottom: 6 }}>
+                These days already had a value you entered yourself, so the imported value was not
+                applied:
+              </p>
+              <ul className="muted" style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+                {importConflicts.slice(0, 20).map((conflict, index) => (
+                  <li key={`${conflict.date}-${conflict.field}-${index}`}>
+                    {formatShort(conflict.date)} — {HEALTH_IMPORT_FIELD_LABELS[conflict.field]}
+                  </li>
+                ))}
+              </ul>
+              {importConflicts.length > 20 && (
+                <p className="muted" style={{ marginTop: 4 }}>
+                  and {importConflicts.length - 20} more.
+                </p>
+              )}
+            </div>
+          )}
+          <button
+            className="setting-row"
+            disabled={capabilityBusy}
+            onClick={() => void clearImportedHealthData()}
+          >
+            <span>Clear imported health data</span>
+            <span className="muted">keeps manual entries ›</span>
+          </button>
         </Section>
       )}
 
@@ -877,6 +1049,68 @@ export function Settings() {
           hidden
           onChange={(e) => e.target.files?.[0] && onImportFile(e.target.files[0])}
         />
+      </Section>
+
+      <Section title="Partner sharing">
+        <p className="muted" style={{ padding: '8px 0' }}>
+          Read-only mirror over the same zero-knowledge relay as backup: your partner sees a full
+          copy of what you log, and can't edit it. Nothing is uploaded unencrypted, and the relay
+          never gets the code needed to decrypt it.
+        </p>
+        {s.partnerShareCode ? (
+          <>
+            <div className="setting-row static-row">
+              <span>Sharing is on</span>
+              <span className="muted">
+                {s.partnerLastSyncedAt ? `Last synced ${formatShort(s.partnerLastSyncedAt)}` : 'Not synced yet'}
+              </span>
+            </div>
+            <button className="setting-row" onClick={() => void resyncPartnerSharing()}>
+              <span>Sync now</span>
+              <span className="muted">›</span>
+            </button>
+            <button className="setting-row" onClick={() => alert(s.partnerShareCode)}>
+              <span>Show sharing code again</span>
+              <span className="muted">›</span>
+            </button>
+            <button
+              className="setting-row"
+              onClick={() => void stopPartnerSharing()}
+              style={{ color: 'var(--red-500)' }}
+            >
+              <span>Stop sharing</span>
+              <span>›</span>
+            </button>
+          </>
+        ) : (
+          <button className="setting-row" onClick={() => void startPartnerSharing()}>
+            <span>Share my data with a partner</span>
+            <span className="muted">›</span>
+          </button>
+        )}
+        {s.partnerViewerMode ? (
+          <>
+            <div className="setting-row static-row">
+              <span>Viewing {s.partnerViewerLabel || "partner's"} data</span>
+              <span className="muted">
+                {s.partnerLastSyncedAt ? `Last synced ${formatShort(s.partnerLastSyncedAt)}` : ''}
+              </span>
+            </div>
+            <button
+              className="setting-row"
+              onClick={() => void stopViewingPartner()}
+              style={{ color: 'var(--red-500)' }}
+            >
+              <span>Stop viewing partner data</span>
+              <span>›</span>
+            </button>
+          </>
+        ) : (
+          <button className="setting-row" onClick={() => void viewPartnerData()}>
+            <span>View a partner's shared data</span>
+            <span className="muted">›</span>
+          </button>
+        )}
       </Section>
 
       <div className="reminder-settings-section">
@@ -1089,16 +1323,59 @@ export function Settings() {
         </button>
       </Section>
 
+      <Section title="About & contact">
+        <p className="muted" style={{ padding: '14px 0', lineHeight: 1.6 }}>
+          Selenya exists because reproductive-health data shouldn’t be a big company’s product to
+          mine. It’s built by one person who cares about that, not a company optimizing your cycle
+          for engagement or ad targeting. Selenya will never go behind a paywall.
+        </p>
+        <a className="setting-row" href="mailto:kshitij.j615@gmail.com">
+          <span>Email — collaborate or report a problem</span>
+          <span className="muted">›</span>
+        </a>
+        <a className="setting-row" href="https://kshitijj.me" target="_blank" rel="noreferrer">
+          <span>Website</span>
+          <span className="muted">kshitijj.me ›</span>
+        </a>
+        <a
+          className="setting-row"
+          href="https://github.com/kshitij406"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span>GitHub</span>
+          <span className="muted">kshitij406 ›</span>
+        </a>
+        <a
+          className="setting-row"
+          href="https://linkedin.com/in/kshitij-jha2006"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span>LinkedIn</span>
+          <span className="muted">›</span>
+        </a>
+        <a
+          className="setting-row"
+          href="https://instagram.com/kxitiz_"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span>Instagram</span>
+          <span className="muted">kxitiz_ ›</span>
+        </a>
+        <a className="setting-row" href="https://ko-fi.com/kshitijj" target="_blank" rel="noreferrer">
+          <span>Support on Ko-fi</span>
+          <span className="muted">›</span>
+        </a>
+      </Section>
+
       <p className="muted" style={{ textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
         Selenya is open source (AGPL-3.0) and not affiliated with Flo Health Inc. Not a medical
         device. Removing the app deletes its local history, keep an encrypted backup.
         <br />
         <a href="https://github.com/kshitij406/selenya" target="_blank" rel="noreferrer">
           Source code
-        </a>
-        {' · '}
-        <a href="https://ko-fi.com/kshitijj" target="_blank" rel="noreferrer">
-          Support the developer
         </a>
       </p>
     </div>

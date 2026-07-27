@@ -2939,6 +2939,7 @@ button.card:active {
   font-size: 13px;
   font-weight: 650;
   text-align: left;
+  text-decoration: none;
   background: none;
   border-bottom: 1px solid var(--line-soft);
 }
@@ -8769,4 +8770,64 @@ button.card:active {
 .card-danger {
   background: rgba(201, 71, 71, 0.06);
   border-color: rgba(201, 71, 71, 0.22);
+}
+
+.safety-banner {
+  padding: 16px 18px;
+  border-radius: var(--radius-card);
+  border: 1px solid;
+  margin-bottom: 14px;
+}
+
+.safety-banner--routine {
+  background: rgba(212, 154, 45, 0.09);
+  border-color: rgba(212, 154, 45, 0.28);
+}
+
+.safety-banner--same-day {
+  background: rgba(216, 137, 56, 0.1);
+  border-color: rgba(216, 137, 56, 0.3);
+}
+
+.safety-banner--emergency {
+  background: rgba(201, 71, 71, 0.1);
+  border-color: rgba(201, 71, 71, 0.35);
+}
+
+.safety-banner__headline {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-950);
+}
+
+.safety-banner__action {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--ink-800);
+}
+
+.safety-banner__reasons {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--ink-650);
+}
+
+.safety-banner__reasons li {
+  margin-bottom: 3px;
+}
+
+.safety-banner__meta {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.safety-banner__caveat {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-500);
+  font-style: italic;
 }

@@ -402,11 +402,11 @@ P3 should not block a strong local-first release.
 ## Explicitly excluded from the roadmap
 
 - Secret Chats/community
-- Partner sharing
 - Symptom Checker
 - Guided Journey
 
-The AI assistant is the only selected feature from the earlier
+The AI assistant and partner sharing (read-only mirror, added session 3 —
+see `handoff.md`) are the selected features from the earlier
 questionable/deferred set.
 
 ## Verification commands

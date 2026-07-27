@@ -21,6 +21,7 @@ explicitly invokes with their own key (see "Data sharing" note).
 | Email address | Yes | No | App functionality | Yes | Only if user opts into email reminders |
 | App activity / in-app messages (AI chat text) | Yes | Yes* | App functionality | Yes | *Sent to the AI provider the user chose, using the user's own API key — not our infrastructure |
 | User-generated content (notes) | Yes | No | App functionality | Yes | Free-text fields in daily logs |
+| Health info, shared with partner sharing feature | Yes | Yes* | App functionality | Yes | *User-initiated only: if the user turns on "Partner sharing" (Settings), an encrypted copy of their log data is pushed to the same zero-knowledge relay backup uses, under a separate code the user explicitly gives to one other person. The relay itself never receives a decryption key and cannot read the contents — same guarantee as backup. Off by default. |
 
 **Is all user data encrypted in transit?** Yes — all network calls (backup,
 reminders, AI providers, OAuth callback) are HTTPS only;

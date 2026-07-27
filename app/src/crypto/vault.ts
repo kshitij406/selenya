@@ -101,6 +101,21 @@ export async function blobIdFromCode(code: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 40)
 }
 
+/**
+ * Same relay, same code format, different domain-separation prefix — so a
+ * partner-sharing code and a backup recovery code can never collide on the
+ * same blob even if a user reused the same string for both. Also gives
+ * `pushBackup`/`restoreBackup` and partner sync independent storage slots on
+ * the identical opaque-blob Worker (see `workers/backup/`).
+ */
+export async function partnerBlobIdFromCode(code: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`lunara-partner-id:${normalizeRecoveryCode(code)}`),
+  )
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 40)
+}
+
 export async function hashPin(pin: string, saltB64: string): Promise<string> {
   const material = await crypto.subtle.importKey(
     'raw',

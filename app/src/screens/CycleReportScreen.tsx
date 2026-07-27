@@ -1,12 +1,19 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type CSSProperties } from 'react'
-import { db, getPeriodStarts } from '../db/schema'
+import { SafetyBanner } from '../components/SafetyBanner'
+import { db, getContraceptionRegimens, getPeriodStarts } from '../db/schema'
+import { CONTRACEPTION_METHOD_LABELS } from '../db/taxonomy'
+import { addDays } from '../engine/cycle'
 import { buildCycleReport } from '../engine/patterns'
+import { buildSafetyTriageInput, evaluateSafetyTriage, type SafetyUrgency } from '../engine/safety'
 import { completedCycles } from '../engine/stats'
 import { formatShort, localToday } from '../lib/dates'
-import { exportCurrentReport } from '../native/reportExport'
+import { exportCurrentReport, shareCurrentReport } from '../native/reportExport'
+import { nativePlatform } from '../native/runtime'
 import '../styles/health.css'
 import '../styles/reports.css'
+
+const URGENCY_RANK: Record<SafetyUrgency, number> = { none: 0, routine: 1, 'same-day': 2, emergency: 3 }
 
 export interface CycleReportScreenProps {
   onBack: () => void
@@ -21,10 +28,36 @@ export function CycleReportScreen({ onBack }: CycleReportScreenProps) {
   const [openEvidence, setOpenEvidence] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const data = useLiveQuery(async () => {
-    const [periodStarts, logs] = await Promise.all([getPeriodStarts(), db.dailyLogs.toArray()])
+    const [periodStarts, logs, regimens] = await Promise.all([
+      getPeriodStarts(),
+      db.dailyLogs.toArray(),
+      getContraceptionRegimens(),
+    ])
+    const windowStart = addDays(today, -89)
+    const regimenEras = regimens
+      .filter((entry) => entry.startDate <= today && (!entry.endDate || entry.endDate >= windowStart))
+      .sort((a, b) => (a.startDate < b.startDate ? 1 : -1))
+    const flagged = logs
+      .filter((log) => log.date >= windowStart && log.date <= today && log.safetyCheckIn)
+      .map((log) => ({
+        date: log.date,
+        result: evaluateSafetyTriage(buildSafetyTriageInput(log.safetyCheckIn)),
+      }))
+      .filter((entry) => entry.result.urgency !== 'none')
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+    const highestSafety = flagged.reduce<(typeof flagged)[number] | null>(
+      (highest, entry) =>
+        !highest || URGENCY_RANK[entry.result.urgency] > URGENCY_RANK[highest.result.urgency]
+          ? entry
+          : highest,
+      null,
+    )
     return {
       report: buildCycleReport(logs, periodStarts, today),
       cycles: completedCycles(periodStarts).slice(-12),
+      flaggedSafetyDays: flagged,
+      highestSafety,
+      regimenEras,
     }
   }, [today])
 
@@ -37,6 +70,15 @@ export function CycleReportScreen({ onBack }: CycleReportScreenProps) {
     }
   }
 
+  async function shareReport() {
+    setExportError(null)
+    try {
+      await shareCurrentReport('Selenya private cycle report')
+    } catch {
+      setExportError('The share sheet could not open. Please try again.')
+    }
+  }
+
   return (
     <div className="health-overlay">
       <header className="health-topbar">
@@ -44,12 +86,23 @@ export function CycleReportScreen({ onBack }: CycleReportScreenProps) {
           ‹
         </button>
         <div className="health-topbar-title">Private cycle report</div>
+        {/* iOS only — see DoctorReport.tsx for why Android doesn't get a
+            second, redundant share button. */}
+        {nativePlatform === 'ios' && (
+          <button
+            className="health-icon-button"
+            onClick={() => void shareReport()}
+            aria-label="Share report"
+          >
+            ↗
+          </button>
+        )}
         <button
           className="health-icon-button"
           onClick={() => void exportReport()}
           aria-label="Export report"
         >
-          ↗
+          ⎙
         </button>
       </header>
 
@@ -67,6 +120,17 @@ export function CycleReportScreen({ onBack }: CycleReportScreenProps) {
             </div>
           ) : (
             <>
+              {data.highestSafety && (
+                <section aria-label="Safety notice">
+                  <SafetyBanner
+                    result={data.highestSafety.result}
+                    detailLines={data.flaggedSafetyDays.map(
+                      (entry) => `${formatShort(entry.date)}: ${entry.result.headline}`,
+                    )}
+                  />
+                </section>
+              )}
+
               <section className="health-hero">
                 <div className="health-kicker">Generated {formatShort(today)}</div>
                 <h1 className="health-display">Your cycle, in context.</h1>
@@ -75,6 +139,22 @@ export function CycleReportScreen({ onBack }: CycleReportScreenProps) {
                   <small>average days</small>
                 </div>
               </section>
+
+              {data.regimenEras.length > 0 && (
+                <p className="health-note">
+                  Contraception context for this window:{' '}
+                  {data.regimenEras
+                    .map(
+                      (entry) =>
+                        `${CONTRACEPTION_METHOD_LABELS[entry.method]} (${formatShort(entry.startDate)}${
+                          entry.endDate ? `–${formatShort(entry.endDate)}` : '–present'
+                        })`,
+                    )
+                    .join(', ')}
+                  . Hormonal methods can suppress or reshape the bleeding pattern below —
+                  interpret accordingly.
+                </p>
+              )}
 
               <section>
                 <div className="health-section-head">

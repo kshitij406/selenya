@@ -1,4 +1,5 @@
 import {
+  clearHealthImportProvenance,
   db,
   type DailyLog,
   type HealthImportField,
@@ -22,6 +23,11 @@ export interface GroupedHealthDay {
   provenance: Partial<Record<HealthImportField, Omit<HealthImportProvenance, 'importedAt'>>>
 }
 
+export interface HealthImportConflict {
+  date: string
+  field: HealthImportField
+}
+
 export interface HealthImportApplyResult {
   samplesReceived: number
   uniqueSamples: number
@@ -29,6 +35,8 @@ export interface HealthImportApplyResult {
   daysChanged: number
   fieldsChanged: number
   fieldsSkippedForUserData: number
+  /** Which day/field pairs had an incoming value that a manual entry already covers. */
+  skippedConflicts: HealthImportConflict[]
 }
 
 export interface AppleHealthPeriodImportResult extends HealthImportApplyResult {
@@ -225,6 +233,7 @@ export async function applyHealthSamples(
   let daysChanged = 0
   let fieldsChanged = 0
   let fieldsSkippedForUserData = 0
+  const skippedConflicts: HealthImportConflict[] = []
 
   await db.transaction('rw', db.dailyLogs, async () => {
     for (const [date, day] of days) {
@@ -243,6 +252,7 @@ export async function applyHealthSamples(
         // user. Health imports never silently replace it.
         if (currentValue !== undefined && !currentProvenance) {
           fieldsSkippedForUserData += 1
+          skippedConflicts.push({ date, field })
           continue
         }
 
@@ -278,7 +288,47 @@ export async function applyHealthSamples(
     daysChanged,
     fieldsChanged,
     fieldsSkippedForUserData,
+    skippedConflicts,
   }
+}
+
+export interface ClearHealthImportsResult {
+  daysChanged: number
+  fieldsCleared: number
+}
+
+/**
+ * Revoke previously imported values. Only strips fields that still carry
+ * import provenance — user-entered values never have provenance (see
+ * `applyHealthSamples`'s conflict rule above), so this can never delete
+ * something the user typed in themselves.
+ */
+export async function clearHealthImports(
+  provider?: HealthImportProvider,
+): Promise<ClearHealthImportsResult> {
+  let daysChanged = 0
+  let fieldsCleared = 0
+
+  await db.transaction('rw', db.dailyLogs, async () => {
+    const logs = await db.dailyLogs.toArray()
+    for (const log of logs) {
+      if (!log.healthImports) continue
+      const toClear = (Object.keys(log.healthImports) as HealthImportField[]).filter(
+        (field) => !provider || log.healthImports?.[field]?.provider === provider,
+      )
+      if (!toClear.length) continue
+
+      const next = clearHealthImportProvenance(log, toClear)
+      for (const field of toClear) {
+        writeField(next, field, undefined)
+      }
+      await db.dailyLogs.put(next)
+      daysChanged += 1
+      fieldsCleared += toClear.length
+    }
+  })
+
+  return { daysChanged, fieldsCleared }
 }
 
 function unavailablePeriodResult(status: HealthPlatformStatus): AppleHealthPeriodImportResult {
@@ -293,6 +343,7 @@ function unavailablePeriodResult(status: HealthPlatformStatus): AppleHealthPerio
     daysChanged: 0,
     fieldsChanged: 0,
     fieldsSkippedForUserData: 0,
+    skippedConflicts: [],
   }
 }
 

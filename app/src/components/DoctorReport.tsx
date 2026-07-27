@@ -29,7 +29,8 @@ import {
   type RangePresetId,
 } from '../lib/dateRange'
 import { formatShort, localToday } from '../lib/dates'
-import { exportCurrentReport } from '../native/reportExport'
+import { exportCurrentReport, shareCurrentReport } from '../native/reportExport'
+import { nativePlatform } from '../native/runtime'
 import { useApp } from '../state/appStore'
 import '../styles/reports.css'
 
@@ -139,6 +140,15 @@ export function DoctorReport() {
     }
   }
 
+  async function shareReport() {
+    setExportError(null)
+    try {
+      await shareCurrentReport('Selenya doctor report')
+    } catch {
+      setExportError('The share sheet could not open. Please try again.')
+    }
+  }
+
   return (
     <div className="overlay">
       <div className="overlay-head no-print">
@@ -146,6 +156,15 @@ export function DoctorReport() {
           ‹
         </button>
         <h2>Doctor’s report</h2>
+        {/* iOS only: it gets a true PDF+share-sheet flow. Android's export
+            button already opens a print dialog with "Save as PDF" built in
+            (see native/reportExport.ts), so a second identical button here
+            would just be confusing. */}
+        {nativePlatform === 'ios' && (
+          <button className="back-btn" onClick={() => void shareReport()} aria-label="Share report">
+            ↗
+          </button>
+        )}
         <button className="back-btn" onClick={() => void exportReport()} aria-label="Export report">
           ⎙
         </button>

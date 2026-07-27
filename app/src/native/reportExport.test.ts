@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { exportCurrentReport } from './reportExport'
+import { exportCurrentReport, shareCurrentReport } from './reportExport'
 
 describe('exportCurrentReport', () => {
   it('uses the native print bridge inside a native shell', async () => {
@@ -37,6 +37,26 @@ describe('exportCurrentReport', () => {
       exportCurrentReport('Private cycle report', {
         native: true,
         bridge: { printReport: vi.fn().mockRejectedValue(failure) },
+      }),
+    ).rejects.toBe(failure)
+  })
+})
+
+describe('shareCurrentReport', () => {
+  it('calls the native share bridge with the given job name', async () => {
+    const shareReport = vi.fn().mockResolvedValue(undefined)
+
+    await shareCurrentReport('Private cycle report', { bridge: { shareReport } })
+
+    expect(shareReport).toHaveBeenCalledWith({ jobName: 'Private cycle report' })
+  })
+
+  it('propagates native share failures so the screen can explain them', async () => {
+    const failure = new Error('Share sheet unavailable')
+
+    await expect(
+      shareCurrentReport('Private cycle report', {
+        bridge: { shareReport: vi.fn().mockRejectedValue(failure) },
       }),
     ).rejects.toBe(failure)
   })

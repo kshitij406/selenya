@@ -1,18 +1,20 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { SafetyBanner } from '../components/SafetyBanner'
 import {
   PREGNANCY_CHECKLISTS,
   PREGNANCY_FAQS,
   PREGNANCY_SOURCES,
   pregnancyWeekDetail,
 } from '../content/pregnancyGuide'
-import { getSetting, setSetting } from '../db/schema'
+import { db, getSetting, setSetting } from '../db/schema'
 import {
   pregnancyTimeline,
   resolvePregnancyDating,
   type PregnancyDatingMethod,
   type PregnancyDatingResult,
 } from '../engine/pregnancyDating'
+import { buildSafetyTriageInput, evaluateSafetyTriage } from '../engine/safety'
 import { formatLong, formatShort, localToday } from '../lib/dates'
 import '../styles/health.css'
 
@@ -59,6 +61,10 @@ export function PregnancyDetailScreen({ dating, lmp, onBack }: PregnancyDetailSc
     async () => (await getSetting(CHECKLIST_KEY)) ?? '[]',
     [],
     '[]',
+  )
+  const todaysLog = useLiveQuery(() => db.dailyLogs.get(today), [today])
+  const safetyResult = evaluateSafetyTriage(
+    buildSafetyTriageInput(todaysLog?.safetyCheckIn, { pregnancyStatus: 'confirmed' }),
   )
 
   useEffect(() => {
@@ -123,6 +129,12 @@ export function PregnancyDetailScreen({ dating, lmp, onBack }: PregnancyDetailSc
 
       <div className="health-scroll">
         <main className="health-canvas">
+          {safetyResult.urgency !== 'none' && (
+            <section aria-label="Safety notice">
+              <SafetyBanner result={safetyResult} />
+            </section>
+          )}
+
           <section className="health-hero">
             <div className="health-kicker">Trimester {current.trimester}</div>
             <h1 className="health-display">

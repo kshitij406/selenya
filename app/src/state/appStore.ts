@@ -28,6 +28,8 @@ interface AppState {
   setTtcDetailOpen: (open: boolean) => void
   trackerCustomizeOpen: boolean
   setTrackerCustomizeOpen: (open: boolean) => void
+  contraceptionOpen: boolean
+  setContraceptionOpen: (open: boolean) => void
   locked: boolean
   setLocked: (locked: boolean) => void
   articleSlug: string | null
@@ -59,6 +61,8 @@ export const useApp = create<AppState>((set) => ({
   setTtcDetailOpen: (ttcDetailOpen) => set({ ttcDetailOpen }),
   trackerCustomizeOpen: false,
   setTrackerCustomizeOpen: (trackerCustomizeOpen) => set({ trackerCustomizeOpen }),
+  contraceptionOpen: false,
+  setContraceptionOpen: (contraceptionOpen) => set({ contraceptionOpen }),
   locked: false,
   setLocked: (locked) => set({ locked }),
   articleSlug: null,
