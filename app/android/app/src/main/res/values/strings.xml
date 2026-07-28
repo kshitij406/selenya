@@ -1,9 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Selenya</string>
-    <string name="title_activity_main">Selenya</string>
-    <string name="package_name">app.lunara.mobile</string>
-    <string name="custom_url_scheme">app.lunara.mobile</string>
-    <string name="widget_name">Selenya cycle</string>
-    <string name="widget_description">A private glance at your current Selenya cycle snapshot</string>
-</resources>
