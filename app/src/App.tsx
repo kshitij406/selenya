@@ -17,6 +17,7 @@ import { Insights } from './screens/Insights'
 import { Onboarding } from './screens/Onboarding'
 import { Settings } from './screens/Settings'
 import { Today } from './screens/Today'
+import { useElasticOverscroll } from './lib/useElasticOverscroll'
 import { isNative } from './native/runtime'
 import {
   ContraceptionScreen,
@@ -127,6 +128,7 @@ export default function App() {
     }
   }, [setLocked])
 
+  useElasticOverscroll()
 
   if (!ready) return <div className="page page-loading" role="status" aria-label="Loading Selenya" />
   if (!onboarded) return <Onboarding onDone={() => setOnboarded(true)} />

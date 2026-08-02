@@ -53,7 +53,7 @@
 .health-scroll {
   flex: 1;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: none;
   padding: 6px 18px calc(var(--safe-bottom) + 34px);
   scrollbar-width: none;
 }

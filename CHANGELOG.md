@@ -6,6 +6,8 @@ here. Dates are UTC.
 
 ## Unreleased
 
+## 0.2.0 - 2026-08-02
+
 ### Fixed
 
 - **Weak PIN hashing.** `hashPin` derived the app-lock PIN hash with a single
@@ -74,6 +76,15 @@ here. Dates are UTC.
   needs a new KV namespace provisioned (`wrangler kv namespace create
   RATE_LIMITS`, then paste the id into `workers/backup/wrangler.toml`)
   before this is deployed; reminders reuses its existing `SUBS` namespace.
+- **Home screen insight cards showed no left gutter and only ~1.5 cards at
+  once.** The insight-card carousel (`.daily-insight-rail`) uses the
+  standard full-bleed-then-repad technique, but a scroll-snap quirk was
+  auto-scrolling the container exactly past its own left padding on initial
+  render, silently canceling it — confirmed by measuring `scrollLeft` (20px
+  instead of 0) via live DOM inspection, not guesswork. Fixed with an
+  explicit `scroll-padding-left`. Also narrowed each card
+  (`min(63%, 208px)` → `min(46%, 165px)`) so about 2.2 cards are visible
+  instead of 1.5. (`app/src/styles/app.css`)
 
 ### Added
 
@@ -124,6 +135,39 @@ here. Dates are UTC.
   (`app/src/lib/assistant.ts`, `app/src/lib/assistantModels.ts`,
   `app/src/components/AssistantScreen.tsx`, `app/src/native/secureVault.ts`,
   `app/.env.example`, `app/src/vite-env.d.ts`)
+- **Scroll overshoot/bounce.** Capacitor's Android WebView has no iOS-style
+  elastic bounce at scroll edges — it paints a Material "glow" instead, and
+  native `overscroll-behavior` can't fix that (it only controls chaining/
+  refresh, not the stretch itself). Added a hand-built rubber-band effect
+  (Apple's damping curve, touch tracking + CSS transforms, no
+  `preventDefault` since Chromium marks `touchmove` non-cancelable mid-
+  gesture on Android) via one delegated `document`-level listener set that
+  covers every scroll container in the app, current and future, from a
+  single call site. Guarded against firing on programmatic scrolls (tab
+  re-tap, onboarding step change, assistant auto-scroll-to-bottom) so only
+  a real finger gesture ever bounces.
+  (new `app/src/lib/useElasticOverscroll.ts`,
+  `app/src/lib/useElasticOverscroll.test.ts`, `app/src/App.tsx`,
+  `app/src/styles/base.css`, `app/src/styles/app.css`,
+  `app/src/styles/health.css`, `app/src/styles/assistant.css`)
+- **Emoji icons on symptom and mood chips.** A small leading emoji now
+  renders on every symptom (32) and mood (14) chip in the log sheet, for
+  faster visual scanning while logging. Implemented as an additive lookup
+  keyed by the existing label strings rather than changing the `SYMPTOMS`/
+  `MOODS` arrays themselves — those strings are literal keys already
+  persisted in users' encrypted local logs, so the underlying data format
+  is untouched. (`app/src/db/taxonomy.ts`, `app/src/components/LogSheet.tsx`,
+  `app/src/styles/app.css`)
+- **Vertically scrollable calendar.** Replaced the single-month-with-arrows
+  calendar view with a continuously scrollable list of months (windowed,
+  lazily grown backward/forward as you scroll, capped at 5 years each
+  direction), so logged periods and the gaps between cycles read as one
+  continuous timeline instead of month-by-month snapshots. The year
+  overview is repurposed as a jump-to-month picker; a sticky day-of-week
+  header and a static (non-scrolling) toolbar/legend sit above the
+  infinite-scroll region.
+  (`app/src/components/CalendarScreen.tsx`,
+  new `app/src/components/CalendarScreen.test.ts`, `app/src/styles/app.css`)
 
 ### Docs
 
@@ -134,3 +178,10 @@ here. Dates are UTC.
 Verification for every entry above: `pnpm --filter @lunara/app test` (185/185
 passing, including real-IndexedDB integration tests) and
 `pnpm --filter @lunara/app build` (clean).
+
+Verification for the 0.2.0 entries: `pnpm --filter @lunara/app test` (210/210
+passing) and `pnpm --filter @lunara/app build` (clean); all four features and
+both fixed bugs were additionally confirmed live on an Android emulator via
+Chrome DevTools Protocol (touch/scroll behavior, live DOM measurement of the
+scroll-padding and card-width fixes, and the calendar year-picker's scroll
+observers), not just screenshots.

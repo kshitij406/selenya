@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   clearHealthImportProvenance,
   db,
@@ -13,6 +13,8 @@ import { localToday, monthLabel } from '../lib/dates'
 import { useApp } from '../state/appStore'
 
 const DOW = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+
+const STICKY_DOW_HEIGHT = 40
 
 function iso(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -45,13 +47,38 @@ function dayClass(
   return cls.join(' ')
 }
 
+function monthIndex(year: number, month: number): number {
+  return year * 12 + month
+}
+
+function fromMonthIndex(index: number): { year: number; month: number } {
+  return { year: Math.floor(index / 12), month: ((index % 12) + 12) % 12 }
+}
+
 export function CalendarScreen() {
   const { setCalendarOpen, openSheet } = useApp()
   const today = localToday()
   const [y0, m0] = today.split('-').map(Number)
-  const [view, setView] = useState({ year: y0, month: m0 - 1 })
-  const [viewMode, setViewMode] = useState<'month' | 'year'>('month')
+  const todayIndex = monthIndex(y0, m0 - 1)
+
+  const [range, setRange] = useState({ back: 12, forward: 2 })
+  const [labelIndex, setLabelIndex] = useState(todayIndex)
+  const [picking, setPicking] = useState(false)
+  const [pickerYear, setPickerYear] = useState(y0)
   const [editingPeriods, setEditingPeriods] = useState(false)
+  const [pendingJump, setPendingJump] = useState<number | null>(null)
+
+  const scroller = useRef<HTMLDivElement>(null)
+  const monthRefs = useRef(new Map<number, HTMLElement>())
+  const topSentinel = useRef<HTMLDivElement>(null)
+  const bottomSentinel = useRef<HTMLDivElement>(null)
+  const prepend = useRef<{ height: number; top: number } | null>(null)
+
+  const indices = useMemo(() => {
+    const list: number[] = []
+    for (let i = todayIndex - range.back; i <= todayIndex + range.forward; i++) list.push(i)
+    return list
+  }, [range.back, range.forward, todayIndex])
 
   const data = useLiveQuery(async () => {
     const [periodStarts, ovulations, flowLogs, cycleLength] = await Promise.all([
@@ -71,19 +98,6 @@ export function CalendarScreen() {
     }
   }, [today])
 
-  const first = new Date(view.year, view.month, 1)
-  const daysInMonth = new Date(view.year, view.month + 1, 0).getDate()
-  const leadBlanks = (first.getDay() + 6) % 7 // Monday-start grid
-
-  function shift(delta: number) {
-    if (viewMode === 'year') {
-      setView((current) => ({ ...current, year: current.year + delta }))
-      return
-    }
-    const m = view.month + delta
-    setView({ year: view.year + Math.floor(m / 12), month: ((m % 12) + 12) % 12 })
-  }
-
   async function togglePeriodDate(date: string) {
     const existing = await db.dailyLogs.get(date)
     if (existing?.flow) {
@@ -99,19 +113,123 @@ export function CalendarScreen() {
     }
   }
 
-  function openDate(date: string) {
-    if (editingPeriods) {
-      void togglePeriodDate(date)
-      return
+  const openDate = useCallback(
+    (date: string) => {
+      if (editingPeriods) {
+        void togglePeriodDate(date)
+        return
+      }
+      setCalendarOpen(false)
+      openSheet(date)
+    },
+    [editingPeriods, setCalendarOpen, openSheet],
+  )
+
+  function jumpTo(index: number) {
+    setRange((r) => ({
+      back: Math.max(r.back, todayIndex - index),
+      forward: Math.max(r.forward, index - todayIndex),
+    }))
+    setPendingJump(index)
+    setPicking(false)
+  }
+
+  function goToday() {
+    if (picking) {
+      setPicking(false)
+      jumpTo(todayIndex)
+    } else if (indices.includes(todayIndex)) {
+      const el = monthRefs.current.get(todayIndex)
+      const sc = scroller.current
+      if (el && sc) {
+        sc.scrollTo({
+          top: sc.scrollTop + el.getBoundingClientRect().top - sc.getBoundingClientRect().top - STICKY_DOW_HEIGHT,
+          behavior: 'smooth',
+        })
+      }
+    } else {
+      jumpTo(todayIndex)
     }
-    setCalendarOpen(false)
-    openSheet(date)
   }
 
   function chooseMonth(month: number) {
-    setView((current) => ({ ...current, month }))
-    setViewMode('month')
+    jumpTo(monthIndex(pickerYear, month))
   }
+
+  // Initial scroll position: today's month at the top of the scrollport.
+  useLayoutEffect(() => {
+    const el = monthRefs.current.get(todayIndex)
+    const sc = scroller.current
+    if (!el || !sc) return
+    sc.scrollTop += el.getBoundingClientRect().top - sc.getBoundingClientRect().top - STICKY_DOW_HEIGHT
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Header label sync while scrolling.
+  useEffect(() => {
+    const sc = scroller.current
+    if (!sc) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          const index = Number((entry.target as HTMLElement).dataset.monthIndex)
+          if (!Number.isNaN(index)) {
+            setLabelIndex((current) => (current === index ? current : index))
+          }
+        }
+      },
+      { root: sc, rootMargin: '-44% 0px -52% 0px', threshold: 0 },
+    )
+    for (const i of indices) {
+      const el = monthRefs.current.get(i)
+      if (el) observer.observe(el)
+    }
+    return () => observer.disconnect()
+  }, [indices, picking])
+
+  // Window growth via top/bottom sentinels.
+  useEffect(() => {
+    const sc = scroller.current
+    const top = topSentinel.current
+    const bottom = bottomSentinel.current
+    if (!sc || !top || !bottom) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          if (entry.target === top) {
+            prepend.current = { height: sc.scrollHeight, top: sc.scrollTop }
+            setRange((r) => ({ ...r, back: Math.min(r.back + 12, 60) }))
+          } else if (entry.target === bottom) {
+            setRange((r) => ({ ...r, forward: Math.min(r.forward + 6, 24) }))
+          }
+        }
+      },
+      { root: sc, rootMargin: '600px 0px' },
+    )
+    observer.observe(top)
+    observer.observe(bottom)
+    return () => observer.disconnect()
+  }, [picking])
+
+  // Prepend scroll-position compensation.
+  useLayoutEffect(() => {
+    const sc = scroller.current
+    if (!sc || !prepend.current) return
+    sc.scrollTop = prepend.current.top + (sc.scrollHeight - prepend.current.height)
+    prepend.current = null
+  }, [range.back])
+
+  // Jump-to-month completion.
+  useLayoutEffect(() => {
+    if (pendingJump === null) return
+    const el = monthRefs.current.get(pendingJump)
+    const sc = scroller.current
+    if (!el || !sc) return
+    sc.scrollTop += el.getBoundingClientRect().top - sc.getBoundingClientRect().top - STICKY_DOW_HEIGHT
+    setPendingJump(null)
+  }, [indices, pendingJump])
 
   return (
     <div className="overlay">
@@ -121,40 +239,31 @@ export function CalendarScreen() {
         </button>
         <button
           className="calendar-title-button"
-          onClick={() => setViewMode((mode) => (mode === 'month' ? 'year' : 'month'))}
-          aria-label={viewMode === 'month' ? 'Show year overview' : 'Show selected month'}
+          onClick={() => (picking ? jumpTo(labelIndex) : setPicking(true))}
+          aria-label={picking ? 'Show calendar' : 'Show year overview'}
         >
-          <h2>{viewMode === 'month' ? monthLabel(view.year, view.month) : view.year}</h2>
-          <span>{viewMode === 'month' ? '⌄' : '⌃'}</span>
+          <h2>
+            {picking
+              ? pickerYear
+              : monthLabel(fromMonthIndex(labelIndex).year, fromMonthIndex(labelIndex).month)}
+          </h2>
+          <span>{picking ? '⌃' : '⌄'}</span>
         </button>
-        <div className="row" style={{ gap: 4 }}>
-          <button className="back-btn" onClick={() => shift(-1)} aria-label="Previous month">
-            ‹
-          </button>
-          <button className="back-btn" onClick={() => shift(1)} aria-label="Next month">
-            ›
-          </button>
-        </div>
+        <span className="overlay-head-spacer" aria-hidden="true" />
       </div>
-      <div className="overlay-body">
+
+      <div className="calendar-static">
         <div className="calendar-toolbar">
           <button
             className={editingPeriods ? 'active' : ''}
             onClick={() => {
               setEditingPeriods((editing) => !editing)
-              setViewMode('month')
+              setPicking(false)
             }}
           >
             {editingPeriods ? 'Done editing' : 'Edit period dates'}
           </button>
-          <button
-            onClick={() => {
-              setView({ year: y0, month: m0 - 1 })
-              setViewMode('month')
-            }}
-          >
-            Today
-          </button>
+          <button onClick={goToday}>Today</button>
         </div>
 
         {editingPeriods && (
@@ -163,78 +272,133 @@ export function CalendarScreen() {
           </div>
         )}
 
-        {viewMode === 'year' ? (
-          <div className="year-grid">
-            {Array.from({ length: 12 }).map((_, month) => {
-              const miniFirst = new Date(view.year, month, 1)
-              const miniDays = new Date(view.year, month + 1, 0).getDate()
-              const miniLead = (miniFirst.getDay() + 6) % 7
-              return (
-                <button key={month} className="mini-month" onClick={() => chooseMonth(month)}>
-                  <strong>{monthLabel(view.year, month).split(' ')[0]}</strong>
-                  <span className="mini-days" aria-hidden="true">
-                    {Array.from({ length: miniLead }).map((_, index) => <i key={`b-${index}`} />)}
-                    {Array.from({ length: miniDays }).map((_, index) => {
-                      const date = iso(view.year, month, index + 1)
-                      const logged = data?.logged.has(date)
-                      return <i key={date} className={logged ? 'logged' : ''}>{index + 1}</i>
-                    })}
-                  </span>
-                </button>
-              )
-            })}
+        <div className="card calendar-legend calendar-legend-compact">
+          <div className="row">
+            <span className="cal-day period" style={{ width: 16, maxHeight: 16, aspectRatio: '1' }} />
+            <span className="muted">Logged period</span>
           </div>
-        ) : (
-          <>
-            <div className="cal-grid" style={{ marginBottom: 6 }}>
-              {DOW.map((day, index) => (
-                <div key={index} className="cal-dow">{day}</div>
-              ))}
+          <div className="row">
+            <span className="cal-day predicted" style={{ width: 16, maxHeight: 16, aspectRatio: '1' }} />
+            <span className="muted">Predicted period</span>
+          </div>
+          <div className="row">
+            <span className="cal-day fertile" style={{ width: 16, maxHeight: 16, aspectRatio: '1' }} />
+            <span className="muted">Fertile window (estimate)</span>
+          </div>
+          <div className="row">
+            <span className="cal-day ovulation" style={{ width: 16, maxHeight: 16, aspectRatio: '1' }} />
+            <span className="muted">Predicted ovulation</span>
+          </div>
+        </div>
+        <p className="muted cal-disclaimer">
+          Tap any day to log or edit. Fertility estimates must not be used as contraception.
+        </p>
+      </div>
+
+      <div className="overlay-body cal-scroll" ref={scroller}>
+        {picking ? (
+          <div className="cal-year-pick">
+            <div className="row cal-year-nav">
+              <button className="back-btn" onClick={() => setPickerYear((y) => y - 1)} aria-label="Previous year">
+                ‹
+              </button>
+              <strong>{pickerYear}</strong>
+              <button className="back-btn" onClick={() => setPickerYear((y) => y + 1)} aria-label="Next year">
+                ›
+              </button>
             </div>
-            <div className="cal-grid">
-              {Array.from({ length: leadBlanks }).map((_, index) => <div key={`b${index}`} />)}
-              {Array.from({ length: daysInMonth }).map((_, index) => {
-                const date = iso(view.year, view.month, index + 1)
+            <div className="year-grid">
+              {Array.from({ length: 12 }).map((_, month) => {
+                const miniFirst = new Date(pickerYear, month, 1)
+                const miniDays = new Date(pickerYear, month + 1, 0).getDate()
+                const miniLead = (miniFirst.getDay() + 6) % 7
                 return (
-                  <button
-                    key={date}
-                    className={dayClass(date, today, data?.logged ?? new Set(), data?.prediction ?? null, 5)}
-                    onClick={() => openDate(date)}
-                  >
-                    {index + 1}
+                  <button key={month} className="mini-month" onClick={() => chooseMonth(month)}>
+                    <strong>{monthLabel(pickerYear, month).split(' ')[0]}</strong>
+                    <span className="mini-days" aria-hidden="true">
+                      {Array.from({ length: miniLead }).map((_, index) => <i key={`b-${index}`} />)}
+                      {Array.from({ length: miniDays }).map((_, index) => {
+                        const date = iso(pickerYear, month, index + 1)
+                        const logged = data?.logged.has(date)
+                        return <i key={date} className={logged ? 'logged' : ''}>{index + 1}</i>
+                      })}
+                    </span>
                   </button>
                 )
               })}
             </div>
+          </div>
+        ) : (
+          <>
+            <div className="cal-grid cal-dow-row">
+              {DOW.map((d, i) => (
+                <div key={i} className="cal-dow">{d}</div>
+              ))}
+            </div>
+            <div ref={topSentinel} className="cal-sentinel" />
+            {indices.map((i) => (
+              <div
+                key={i}
+                ref={(el) => {
+                  if (el) monthRefs.current.set(i, el)
+                  else monthRefs.current.delete(i)
+                }}
+                data-month-index={i}
+              >
+                <MonthBlock
+                  index={i}
+                  today={today}
+                  logged={data?.logged ?? new Set()}
+                  prediction={data?.prediction ?? null}
+                  onPick={openDate}
+                />
+              </div>
+            ))}
+            <div ref={bottomSentinel} className="cal-sentinel" />
           </>
         )}
-
-        <div className="card calendar-legend">
-          <div className="row">
-            <span className="cal-day period" style={{ width: 26, maxHeight: 26, aspectRatio: '1' }} />
-            <span className="muted">Logged period</span>
-          </div>
-          <div className="row">
-            <span className="cal-day predicted" style={{ width: 26, maxHeight: 26, aspectRatio: '1' }} />
-            <span className="muted">Predicted period</span>
-          </div>
-          <div className="row">
-            <span className="cal-day fertile" style={{ width: 26, maxHeight: 26, aspectRatio: '1' }} />
-            <span className="muted">Fertile window (estimate)</span>
-          </div>
-          <div className="row">
-            <span className="cal-day ovulation" style={{ width: 26, maxHeight: 26, aspectRatio: '1' }} />
-            <span className="muted">Predicted ovulation</span>
-          </div>
-        </div>
-        <p className="muted" style={{ marginTop: 12, textAlign: 'center' }}>
-          {editingPeriods
-            ? 'Changes save on this device immediately.'
-            : 'Tap any day to log or edit. Fertility estimates must not be used as contraception.'}
-        </p>
       </div>
     </div>
   )
 }
+
+const MonthBlock = memo(function MonthBlock({
+  index,
+  today,
+  logged,
+  prediction,
+  onPick,
+}: {
+  index: number
+  today: string
+  logged: Set<string>
+  prediction: Prediction | null
+  onPick: (date: string) => void
+}) {
+  const { year, month } = fromMonthIndex(index)
+  const first = new Date(year, month, 1)
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const leadBlanks = (first.getDay() + 6) % 7
+  return (
+    <section className="cal-month">
+      <h3 className="cal-month-name">{monthLabel(year, month).split(' ')[0]}</h3>
+      <div className="cal-grid">
+        {Array.from({ length: leadBlanks }).map((_, i) => <div key={`b${i}`} />)}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const date = iso(year, month, i + 1)
+          return (
+            <button
+              key={date}
+              className={dayClass(date, today, logged, prediction, 5)}
+              onClick={() => onPick(date)}
+            >
+              {i + 1}
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+})
 
 export { addDays }

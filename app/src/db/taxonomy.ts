@@ -2,6 +2,12 @@
  * Loggable-item taxonomy, reconstructed category-by-category from
  * docs/RESEARCH.md §5. Icons are emoji placeholders until the original icon
  * set lands (M5).
+ *
+ * `SYMPTOM_ICONS` and `MOOD_ICONS` below are keyed by the literal strings in
+ * `SYMPTOMS` and `MOODS`, which are also the values persisted in users'
+ * encrypted logs. If symptoms or moods are ever added, renamed, or removed,
+ * update these lookups in lockstep — the `Record<(typeof …)[number], string>`
+ * typing will cause a build failure if they drift out of sync.
  */
 import type {
   ActivityEvent,
@@ -95,6 +101,66 @@ export const MOODS = [
   'Apathetic',
   'Restless',
 ] as const
+
+export const SYMPTOM_ICONS: Record<(typeof SYMPTOMS)[number], string> = {
+  'Cramps': '🌀',
+  'Headache': '🤕',
+  'Migraine': '🌩️',
+  'Tender breasts': '💗',
+  'Bloating': '🎈',
+  'Acne': '🔴',
+  'Back pain': '🦴',
+  'Fatigue': '🥱',
+  'Nausea': '🤢',
+  'Dizziness': '😵‍💫',
+  'Cravings': '🍫',
+  'Abdominal pain': '😣',
+  'Ovulation pain': '🥚',
+  'Constipation': '🧱',
+  'Diarrhea': '🚽',
+  'Gas': '💨',
+  'Indigestion': '🍽️',
+  'Swelling': '🫧',
+  'Muscle aches': '💪',
+  'Sore throat': '🫁',
+  'Feverish': '🤒',
+  'Chills': '🥶',
+  'Frequent urination': '💧',
+  'Painful urination': '🔥',
+  'Dry skin': '🏜️',
+  'Oily skin': '🧴',
+  'Hair changes': '💇',
+  'Hot flashes': '🥵',
+  'Night sweats': '💦',
+  'Brain fog': '🌫️',
+  'Joint pain': '🦵',
+  'Insomnia': '🛏️',
+}
+
+export const MOOD_ICONS: Record<(typeof MOODS)[number], string> = {
+  'Calm': '😌',
+  'Happy': '😊',
+  'Energetic': '⚡',
+  'Sad': '😢',
+  'Anxious': '😰',
+  'Irritable': '😠',
+  'Mood swings': '🎢',
+  'Low energy': '🔋',
+  'Focused': '🎯',
+  'Confident': '😎',
+  'Sensitive': '🥺',
+  'Stressed': '😩',
+  'Apathetic': '😐',
+  'Restless': '🌪️',
+}
+
+export function symptomIcon(name: string): string {
+  return SYMPTOM_ICONS[name as keyof typeof SYMPTOM_ICONS] ?? ''
+}
+
+export function moodIcon(name: string): string {
+  return MOOD_ICONS[name as keyof typeof MOOD_ICONS] ?? ''
+}
 
 export const DISCHARGES: { id: Discharge; label: string }[] = [
   { id: 'none', label: 'No discharge' },

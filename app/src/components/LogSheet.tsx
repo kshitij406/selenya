@@ -32,9 +32,11 @@ import {
   DISCHARGES,
   FLOWS,
   LIFESTYLE_EVENTS,
+  moodIcon,
   MOODS,
   PREGNANCY_TEST_RESULTS,
   SEX_OPTIONS,
+  symptomIcon,
   SYMPTOM_IMPAIRMENTS,
   SYMPTOM_SEVERITIES,
   SYMPTOMS,
@@ -481,6 +483,9 @@ export function LogSheet({
                 aria-pressed={(draft.symptoms ?? []).includes(s)}
                 onClick={() => toggleSymptom(s)}
               >
+                <span className="chip-icon" aria-hidden="true">
+                  {symptomIcon(s)}
+                </span>
                 {s}
               </button>
             ))}
@@ -501,7 +506,12 @@ export function LogSheet({
                   style={{ padding: 13, boxShadow: 'none' }}
                 >
                   <div className="spread">
-                    <strong>{symptom}</strong>
+                    <span>
+                      <span className="chip-icon" aria-hidden="true">
+                        {symptomIcon(symptom)}
+                      </span>
+                      <strong>{symptom}</strong>
+                    </span>
                     <span className="muted">Optional detail</span>
                   </div>
                   <div className="muted" style={{ marginTop: 10 }}>
@@ -553,6 +563,9 @@ export function LogSheet({
                 aria-pressed={(draft.moods ?? []).includes(m)}
                 onClick={() => setDraft({ ...draft, moods: toggle(draft.moods ?? [], m) })}
               >
+                <span className="chip-icon" aria-hidden="true">
+                  {moodIcon(m)}
+                </span>
                 {m}
               </button>
             ))}
