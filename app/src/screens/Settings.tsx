@@ -164,6 +164,7 @@ export function Settings() {
   const [widget, setWidget] = useState<WidgetStatus | null>(null)
   const [capabilityBusy, setCapabilityBusy] = useState(false)
   const [reminderBusy, setReminderBusy] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
   const [reminders, setReminders] = useState<ReminderPreferences | null>(null)
   const [pregnancyMethod, setPregnancyMethod] =
     useState<PregnancyDatingMethod>('lmp')
@@ -1329,45 +1330,62 @@ export function Settings() {
           mine. It’s built by one person who cares about that, not a company optimizing your cycle
           for engagement or ad targeting. Selenya will never go behind a paywall.
         </p>
-        <a className="setting-row" href="mailto:kshitij.j615@gmail.com">
-          <span>Email — collaborate or report a problem</span>
-          <span className="muted">›</span>
-        </a>
-        <a className="setting-row" href="https://kshitijj.me" target="_blank" rel="noreferrer">
-          <span>Website</span>
-          <span className="muted">kshitijj.me ›</span>
-        </a>
-        <a
+        <button
           className="setting-row"
-          href="https://github.com/kshitij406"
-          target="_blank"
-          rel="noreferrer"
+          aria-expanded={contactOpen}
+          onClick={() => setContactOpen((o) => !o)}
         >
-          <span>GitHub</span>
-          <span className="muted">kshitij406 ›</span>
-        </a>
-        <a
-          className="setting-row"
-          href="https://linkedin.com/in/kshitij-jha2006"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <span>LinkedIn</span>
-          <span className="muted">›</span>
-        </a>
-        <a
-          className="setting-row"
-          href="https://instagram.com/kxitiz_"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <span>Instagram</span>
-          <span className="muted">kxitiz_ ›</span>
-        </a>
-        <a className="setting-row" href="https://ko-fi.com/kshitijj" target="_blank" rel="noreferrer">
-          <span>Support on Ko-fi</span>
-          <span className="muted">›</span>
-        </a>
+          <span>Contact & links</span>
+          <span className="muted">{contactOpen ? '⌃' : '⌄'}</span>
+        </button>
+        {contactOpen && (
+          <>
+            <a className="setting-row" href="mailto:kshitij.j615@gmail.com">
+              <span>Email — collaborate or report a problem</span>
+              <span className="muted">›</span>
+            </a>
+            <a className="setting-row" href="https://kshitijj.me" target="_blank" rel="noreferrer">
+              <span>Website</span>
+              <span className="muted">kshitijj.me ›</span>
+            </a>
+            <a
+              className="setting-row"
+              href="https://github.com/kshitij406"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>GitHub</span>
+              <span className="muted">kshitij406 ›</span>
+            </a>
+            <a
+              className="setting-row"
+              href="https://linkedin.com/in/kshitij-jha2006"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>LinkedIn</span>
+              <span className="muted">›</span>
+            </a>
+            <a
+              className="setting-row"
+              href="https://instagram.com/kxitiz_"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>Instagram</span>
+              <span className="muted">kxitiz_ ›</span>
+            </a>
+            <a
+              className="setting-row"
+              href="https://ko-fi.com/kshitijj"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>Support on Ko-fi</span>
+              <span className="muted">›</span>
+            </a>
+          </>
+        )}
       </Section>
 
       <p className="muted" style={{ textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
